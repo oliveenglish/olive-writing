@@ -1,0 +1,9 @@
+{
+  "name": "올리브 라이팅",
+  "short_name": "올리브",
+  "start_url": "/student",
+  "display": "standalone",
+  "background_color": "#F4F7FB",
+  "theme_color": "#1B2F5B",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}
