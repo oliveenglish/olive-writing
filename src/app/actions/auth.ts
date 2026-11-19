@@ -17,8 +17,20 @@ export async function loginStudent(_: FormState, fd: FormData): Promise<FormStat
 export async function loginTeacher(_: FormState, fd: FormData): Promise<FormState> {
   const email = String(fd.get("email") || "").trim().toLowerCase();
   const password = String(fd.get("password") || "");
-  const { error } = await serverClient().auth.signInWithPassword({ email, password });
-  if (error) return { error: "이메일이나 비밀번호가 맞지 않아요." };
+  const { data, error } = await serverClient().auth.signInWithPassword({ email, password });
+  if (error || !data.user) {
+    if (/confirm/i.test(error?.message ?? "")) return { error: "이메일 확인이 안 된 계정이에요. Supabase → Authentication → Users에서 지우고 다시 가입해 주세요." };
+    return { error: "이메일이나 비밀번호가 맞지 않아요. 처음이면 아래 '쌤 계정 처음 만들기'로 먼저 가입해 주세요." };
+  }
+  // 로그인은 됐는데 쌤 정보(profiles)가 없으면 여기서 만들어 줘요
+  const { data: p } = await db().from("profiles").select("id,role").eq("id", data.user.id).maybeSingle();
+  if (!p) {
+    if (!teacherEmails().includes(email)) return { error: "쌤 계정으로 등록된 이메일이 아니에요. (TEACHER_EMAILS 설정 확인)" };
+    const { error: e2 } = await db().from("profiles").insert({ id: data.user.id, role: "teacher", name: "쌤" });
+    if (e2) return { error: "쌤 정보를 만들지 못했어요: " + e2.message + " (schema.sql을 실행했는지 확인)" };
+  } else if (p.role !== "teacher") {
+    return { error: "학생 계정이에요. 학생 탭에서 로그인해 주세요." };
+  }
   redirect("/teacher");
 }
 
@@ -56,8 +68,12 @@ export async function teacherSignup(_: FormState, fd: FormData): Promise<FormSta
   if (!teacherEmails().includes(email)) return { error: "쌤 계정으로 등록된 이메일이 아니에요. (TEACHER_EMAILS 설정 확인)" };
   if (password.length < 8) return { error: "비밀번호는 8자 이상이에요." };
   const { data: created, error } = await db().auth.admin.createUser({ email, password, email_confirm: true });
-  if (error || !created.user) return { error: "가입하지 못했어요: " + (error?.message ?? "") };
-  await db().from("profiles").insert({ id: created.user.id, role: "teacher", name });
+  if (error || !created.user) {
+    if (/already|registered|exists/i.test(error?.message ?? "")) return { error: "이미 가입된 이메일이에요. 로그인 화면에서 들어가 주세요." };
+    return { error: "가입하지 못했어요: " + (error?.message ?? "") + " (Vercel의 SUPABASE_SERVICE_ROLE_KEY 확인)" };
+  }
+  const { error: e2 } = await db().from("profiles").insert({ id: created.user.id, role: "teacher", name });
+  if (e2) return { error: "쌤 정보를 만들지 못했어요: " + e2.message + " (schema.sql을 실행했는지 확인)" };
   await serverClient().auth.signInWithPassword({ email, password });
   redirect("/teacher");
 }
