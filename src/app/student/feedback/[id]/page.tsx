@@ -18,7 +18,7 @@ export default async function Feedback({ params }: { params: { id: string } }) {
   const [photo, markup] = await Promise.all([signedUrl(s.photo_path), signedUrl(s.markup_path)]);
   return (
     <>
-      <StudentTop name={me.name} />
+      <StudentTop name={me.name} grade={me.grade} nickname={me.nickname} />
       <main className="wrap col">
         <div className="label">첨삭 도착</div>
         <h1 className="title">{s.title}</h1>

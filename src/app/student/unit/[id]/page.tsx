@@ -29,7 +29,7 @@ export default async function UnitPage({ params }: { params: { id: string } }) {
 
   return (
     <UnitPlayer
-      unit={{ id: unit.id, title: unit.title, stage: unit.stage, pass_score: unit.pass_score ?? 7 }}
+      unit={{ id: unit.id, title: unit.title, stage: unit.stage, pass_score: unit.pass_score ?? 6 }}
       words={words ?? []}
       cards={cards ?? []}
       items={by}

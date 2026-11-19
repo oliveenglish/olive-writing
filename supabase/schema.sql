@@ -21,6 +21,7 @@ create table if not exists profiles (
   name text not null,
   username text unique,
   grade text,
+  nickname text,                           -- 별명 (학생 화면 위에 보여요)
   class_id uuid references classes(id) on delete set null,
   start_unit text,
   memo text,
@@ -36,7 +37,7 @@ create table if not exists units (
   ord int not null,                        -- 전체 순서
   title text not null,
   scope text,
-  pass_score int default 7,
+  pass_score int default 6,
   status text default 'published' check (status in ('published','draft'))
 );
 
@@ -232,6 +233,16 @@ do $$ declare t text; begin
     'attempts','unit_progress','reviews','submissions','weekly_runs','final_checks','tasks','task_assignees','reports']
   loop execute format('alter table %I enable row level security', t); end loop;
 end $$;
+
+alter table profiles add column if not exists nickname text;
+
+-- 서버(관리자 키)에 표 사용 권한 주기
+-- (2026년부터 새 Supabase 프로젝트는 이걸 직접 써 줘야 해요. 브라우저용 키에는 주지 않아요.)
+grant usage on schema public to service_role;
+grant all on all tables in schema public to service_role;
+grant all on all sequences in schema public to service_role;
+alter default privileges in schema public grant all on tables to service_role;
+alter default privileges in schema public grant all on sequences to service_role;
 
 -- 사진 저장소 (비공개)
 insert into storage.buckets (id, name, public) values ('submissions', 'submissions', false)

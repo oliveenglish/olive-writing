@@ -63,7 +63,7 @@ export function parseWorkbook(buf: ArrayBuffer): Parsed {
         ord: unitOrder(s(r["유닛 ID"]), n(r["순서"], i + 1)),
         title: s(r["유닛 이름"]),
         scope: s(r["범위"]) || null,
-        pass_score: pass ? Number(pass[1]) : 7,
+        pass_score: pass ? Number(pass[1]) : 6,
         status: s(r["상태"]) === "준비 중" ? "draft" : "published",
       };
     });

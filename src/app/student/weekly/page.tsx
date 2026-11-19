@@ -28,7 +28,7 @@ export default async function Weekly() {
   }
   return (
     <>
-      <StudentTop name={me.name} />
+      <StudentTop name={me.name} grade={me.grade} nickname={me.nickname} />
       <main className="wrap col" style={{ maxWidth: 860 }}>
         <div>
           <div className="label">주간 점검 · 이번 주 배운 {(run?.unit_ids ?? []).join(" · ")}</div>

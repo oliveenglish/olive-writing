@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 const ITEMS = [
   ["/teacher", "반 전체"],
   ["/teacher/grading", "첨삭 · 채점"],
+  ["/teacher/units", "유닛 보기"],
   ["/teacher/db", "문항 DB"],
   ["/teacher/tasks", "추가 과제"],
 ] as const;

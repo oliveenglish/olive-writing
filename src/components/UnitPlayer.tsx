@@ -18,7 +18,7 @@ type Word = { grp: string | null; word: string; meaning: string | null };
 /** 한글 없이 영어 문장이면 눌러서 듣는 예문 */
 const isEn = (t: string) => /[A-Za-z]{2,}/.test(t) && !/[가-힣]/.test(t) && t.trim().split(/\s+/).length >= 2;
 
-function CardBody({ body }: { body: string }) {
+export function CardBody({ body }: { body: string }) {
   const lines = body.split("\n");
   const blocks: React.ReactNode[] = [];
   let table: string[][] = [];
@@ -69,6 +69,7 @@ export default function UnitPlayer({
   const [photo, setPhoto] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [testResult, setTestResult] = useState<QuizResult | null>(null);
+  const [redo, setRedo] = useState<PublicItem[]>([]); // 테스트 못 넘었을 때 비슷한 문제
   const [round, setRound] = useState(0);
   const [sent, setSent] = useState(startStep >= 6);
 
@@ -136,6 +137,8 @@ export default function UnitPlayer({
   } else if (step in practice) {
     const list = practice[step].flatMap((a) => items[a] ?? []);
     body = list.length ? (
+      <div className="col">
+      <div className="small muted">연습이에요 · 틀려도 괜찮아요. 다 풀면 다음 활동으로 가요. (점수는 마지막 확인 테스트로만 봐요)</div>
       <QuizRunner
         key={`${step}-${round}`}
         items={list}
@@ -144,6 +147,7 @@ export default function UnitPlayer({
         check={(id, r, reason, attempt) => checkItem(id, r, "unit", reason, attempt)}
         onDone={() => go(step + 1)}
       />
+      </div>
     ) : (
       <button className="btn" onClick={() => go(step + 1)}>이 활동은 없어요 · 다음으로</button>
     );
@@ -159,6 +163,8 @@ export default function UnitPlayer({
         className="col"
         onSubmit={async (e) => {
           e.preventDefault();
+          const empty = list.filter((q) => (answers[q.id] ?? "").trim().split(/\s+/).filter(Boolean).length < 2).length;
+          if (!photo && empty > 0) return;
           setBusy(true);
           const fd = new FormData();
           list.forEach((q) => { fd.append("id", q.id); fd.append("answer", answers[q.id] ?? ""); });
@@ -177,10 +183,35 @@ export default function UnitPlayer({
           </div>
         ))}
         <PhotoPicker onPick={setPhoto} />
-        <button className="btn" disabled={busy}>{busy ? "보내는 중…" : "쌤에게 보내고 확인 테스트로"}</button>
+        {(() => {
+          const empty = list.filter((q) => (answers[q.id] ?? "").trim().split(/\s+/).filter(Boolean).length < 2).length;
+          const ready = !!photo || empty === 0;
+          return (
+            <>
+              {!ready && <div className="small muted">모든 질문에 영어 문장으로 대답해야 보낼 수 있어요. (남은 질문 {empty}개 · 종이에 써서 사진을 올려도 돼요)</div>}
+              <button className="btn" disabled={busy || !ready}>{busy ? "보내는 중…" : "쌤에게 보내고 확인 테스트로"}</button>
+            </>
+          );
+        })()}
       </form>
     ) : (
       <button className="btn" onClick={() => go(6)}>확인 테스트로</button>
+    );
+  } else if (step === 6 && redo.length && !testResult) {
+    body = (
+      <div className="col">
+        <div className="card tint col" style={{ gap: 4 }}>
+          <b>확인 테스트 · 다시 도전 준비 ({redo.length}문제)</b>
+          <span className="small">방금 틀린 것과 비슷한 문제만 골랐어요. 이것만 풀면 바로 확인 테스트를 다시 봐요.</span>
+        </div>
+        <QuizRunner
+          key={`redo-${round}`}
+          items={redo}
+          instant
+          check={(id, r, reason, attempt) => checkItem(id, r, "review", reason, attempt)}
+          onDone={() => { setRedo([]); setRound((x) => x + 1); window.scrollTo(0, 0); }}
+        />
+      </div>
     );
   } else if (step === 6) {
     body = testResult ? (
@@ -207,10 +238,10 @@ export default function UnitPlayer({
         {hand && <HandPart unitId={unit.id} item={hand} sent={handSent} />}
         {testResult.passed ? (
           <Link href="/student" className="btn">홈으로 · 다음 유닛</Link>
-        ) : testResult.next === "cards" ? (
-          <button className="btn" onClick={() => { setCardIdx(0); go(1); }}>설명 다시 보기</button>
+        ) : testResult.next === "redo" && testResult.redo?.length ? (
+          <button className="btn" onClick={() => { setRedo(testResult.redo ?? []); setTestResult(null); window.scrollTo(0, 0); }}>확인 테스트 이어서 하기</button>
         ) : (
-          <button className="btn" onClick={() => { setTestResult(null); go(2); }}>연습부터 다시</button>
+          <button className="btn" onClick={() => { setTestResult(null); setRound((x) => x + 1); window.scrollTo(0, 0); }}>확인 테스트 다시 보기</button>
         )}
       </div>
     ) : (

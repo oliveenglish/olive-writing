@@ -20,7 +20,7 @@ export default async function TaskPage({ params }: { params: { id: string } }) {
   }
   return (
     <>
-      <StudentTop name={me.name} />
+      <StudentTop name={me.name} grade={me.grade} nickname={me.nickname} />
       <main className="wrap col" style={{ maxWidth: 860 }}>
         <div>
           <div className="label">쌤이 낸 과제</div>

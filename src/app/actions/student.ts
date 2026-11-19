@@ -2,7 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { requireStudent } from "@/lib/auth";
 import { db } from "@/lib/supabase";
-import { acceptedAnswers, diffMarks, isAutoGraded, isCorrect, isSureKind, kindOf, type Item, type Mark } from "@/lib/grading";
+import { acceptedAnswers, diffMarks, isAutoGraded, isCorrect, isSureKind, kindOf, toPublic, type Item, type Mark, type PublicItem } from "@/lib/grading";
 import { dueReviews, scheduleReviews } from "@/lib/data";
 import { createSubmission } from "@/lib/submit";
 
@@ -28,7 +28,8 @@ export type QuizResult = {
   passed: boolean;
   message: string;
   wrong: { prompt: string; response: string; answer: string; bubble: string | null; why: string | null }[];
-  next?: "next" | "cards" | "restart";
+  next?: "next" | "retest" | "redo";
+  redo?: PublicItem[]; // 확인 테스트를 못 넘었을 때: 틀린 것과 같은 오류의 연습 문제
 };
 
 async function getItems(ids: string[]): Promise<Map<string, Item>> {
@@ -53,13 +54,14 @@ export async function checkItem(
   reason?: string,
   attempt = 1
 ): Promise<CheckResult> {
-  const me = await requireStudent();
-  const item = (await getItems([itemId])).get(itemId);
+  const [me, found] = await Promise.all([requireStudent(), getItems([itemId])]);
+  const item = found.get(itemId);
   const empty: CheckResult = { correct: null, answers: [], bubble: null, why: null, sure: true, retry: false };
   if (!item) return empty;
   const correct = isAutoGraded(item) ? isCorrect(item, response) : null;
-  if (attempt === 1)
-    await db().from("attempts").insert({
+  const save =
+    attempt === 1
+      ? db().from("attempts").insert({
       student_id: me.id,
       item_id: item.id,
       unit_id: item.unit_id,
@@ -69,10 +71,13 @@ export async function checkItem(
       reason: reason || null,
       correct,
       error_code: correct === false ? item.error_code : null,
-    });
+    })
+      : Promise.resolve(null);
+  // 기록 저장과 설명 찾기를 동시에 해서 빨리 돌려줘요
+  const [, texts] = await Promise.all([save, correct === false && item.error_code ? codeTexts([item.error_code]) : Promise.resolve(null)]);
   if (correct !== false) return { ...empty, correct, answers: acceptedAnswers(item) };
   const sure = isSureKind(kindOf(item));
-  const t = item.error_code ? (await codeTexts([item.error_code])).get(item.error_code) : undefined;
+  const t = item.error_code ? texts?.get(item.error_code) : undefined;
   const answers = acceptedAnswers(item);
   if (!sure && attempt === 1) {
     // 문장 쓰기류: 이유를 단정하지 않고, 규칙 설명 + 다른 단어 밑줄 → 다시 풀기
@@ -144,18 +149,32 @@ export async function submitTest(unitId: string, responses: Resp[]): Promise<Qui
   const me = await requireStudent();
   const g = await gradeBatch(me.id, responses, "test");
   const { data: unit } = await db().from("units").select("pass_score").eq("id", unitId).single();
-  const pass = unit?.pass_score ?? 7;
+  const pass = unit?.pass_score ?? 6;
   const { data: prog } = await db().from("unit_progress").select("*").eq("student_id", me.id).eq("unit_id", unitId).maybeSingle();
   const passed = g.score >= Math.min(pass, g.total);
   const fails = passed ? 0 : (prog?.fails_in_row ?? 0) + 1;
-  const next: QuizResult["next"] = passed ? "next" : g.score >= pass - 2 ? "cards" : "restart";
+  // 못 넘으면: 처음부터 다시가 아니라, 틀린 것과 같은 오류 코드의 연습 문제 몇 개 → 확인 테스트만 다시
+  let redo: PublicItem[] = [];
+  if (!passed && g.wrongCodes.length) {
+    const { data: similar } = await db()
+      .from("items")
+      .select("*")
+      .eq("unit_id", unitId)
+      .in("activity", ["choose", "arrange", "find", "ko2en"])
+      .in("error_code", Array.from(new Set(g.wrongCodes)));
+    redo = ((similar as Item[]) ?? [])
+      .sort(() => Math.random() - 0.5)
+      .slice(0, Math.min(6, Math.max(3, g.wrongCodes.length * 2)))
+      .map(toPublic);
+  }
+  const next: QuizResult["next"] = passed ? "next" : redo.length ? "redo" : "retest";
   await db()
     .from("unit_progress")
     .upsert(
       {
         student_id: me.id,
         unit_id: unitId,
-        step: passed ? 7 : next === "cards" ? 1 : 2,
+        step: passed ? 7 : 6,
         test_score: g.score,
         test_tries: (prog?.test_tries ?? 0) + 1,
         fails_in_row: fails,
@@ -171,12 +190,13 @@ export async function submitTest(unitId: string, responses: Resp[]): Promise<Qui
     total: g.total,
     passed,
     next,
+    redo,
     wrong: g.wrong,
     message: passed
       ? "통과! 다음 유닛이 열렸어요."
-      : next === "cards"
-      ? "아깝다! 설명을 한 번 더 보고 다시 도전해요."
-      : "처음부터 한 번 더 연습하고 다시 도전해요.",
+      : next === "redo"
+      ? `아깝다! 비슷한 문제 ${redo.length}개만 더 풀고 확인 테스트를 다시 봐요.`
+      : "아깝다! 아래 '왜?'를 읽고 확인 테스트를 다시 봐요.",
   };
 }
 

@@ -17,7 +17,7 @@
   --goldbg: #fffbee;
 }
 * { box-sizing: border-box; }
-html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Noto Sans KR", system-ui, sans-serif; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Noto Sans KR", system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji"; }
 a { color: var(--navy); }
 button, input, textarea, select { font: inherit; }
 h1, h2, h3 { color: var(--head); margin: 0; }

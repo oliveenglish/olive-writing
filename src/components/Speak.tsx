@@ -62,9 +62,55 @@ export function Tap({ children, text }: { children: React.ReactNode; text: strin
   );
 }
 
-/** 그림 칸: 이모지 또는 이미지 주소 */
+/** 그림 칸: 이모지 또는 이미지 주소
+ * 컴퓨터마다 이모지 글꼴이 달라서 네모(□)로 깨질 수 있어요.
+ * 그래서 이모지는 그림 파일(Twemoji)로 보여 주고, 그림을 못 불러오면 글자로 보여 줘요. */
 export function Pic({ v, size = 44 }: { v: string | null | undefined; size?: number }) {
   if (!v) return null;
   if (/^(https?:\/\/|\/)/.test(v)) return <img src={v} alt="" style={{ maxHeight: size * 3, maxWidth: "100%", borderRadius: 12 }} />;
-  return <div style={{ fontSize: size, lineHeight: 1 }}>{v}</div>;
+  const parts = graphemes(v.trim()).filter((g) => g.trim());
+  return (
+    <div className="row" style={{ gap: 6, alignItems: "center" }}>
+      {parts.map((g, i) => <Emoji key={i} g={g} size={size} />)}
+    </div>
+  );
+}
+
+const EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji",sans-serif';
+
+function Emoji({ g, size }: { g: string; size: number }) {
+  const isEmoji = /\p{Extended_Pictographic}/u.test(g);
+  if (!isEmoji) return <span style={{ fontSize: size * 0.7, fontWeight: 800 }}>{g}</span>;
+  const code = toCode(g);
+  return (
+    <img
+      src={`https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/${code}.svg`}
+      alt={g}
+      width={size}
+      height={size}
+      style={{ display: "inline-block" }}
+      onError={(e) => {
+        const el = e.currentTarget;
+        const span = document.createElement("span");
+        span.textContent = g;
+        span.style.fontSize = `${size}px`;
+        span.style.lineHeight = "1";
+        span.style.fontFamily = EMOJI_FONT;
+        el.replaceWith(span);
+      }}
+    />
+  );
+}
+
+/** Twemoji 파일 이름: 코드포인트를 - 로 잇고, ZWJ가 없으면 FE0F는 빼요 */
+function toCode(g: string) {
+  const cps = Array.from(g).map((c) => c.codePointAt(0)!.toString(16));
+  const hasZwj = cps.includes("200d");
+  return (hasZwj ? cps : cps.filter((c) => c !== "fe0f")).join("-");
+}
+
+function graphemes(t: string): string[] {
+  const Seg = (Intl as unknown as { Segmenter?: new (l?: string, o?: { granularity: string }) => { segment: (s: string) => Iterable<{ segment: string }> } }).Segmenter;
+  if (Seg) return Array.from(new Seg(undefined, { granularity: "grapheme" }).segment(t), (x) => x.segment);
+  return Array.from(t);
 }

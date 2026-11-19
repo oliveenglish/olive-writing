@@ -19,7 +19,7 @@ export default async function Final() {
   if (pos.type !== "final" || pos.submitted)
     return (
       <>
-        <StudentTop name={me.name} />
+        <StudentTop name={me.name} grade={me.grade} nickname={me.nickname} />
         <main className="wrap"><div className="card col">지금은 최종 점검 차례가 아니에요. <Link href="/student" className="btn">홈으로</Link></div></main>
       </>
     );
@@ -39,7 +39,7 @@ export default async function Final() {
   }
   return (
     <>
-      <StudentTop name={me.name} />
+      <StudentTop name={me.name} grade={me.grade} nickname={me.nickname} />
       <main className="wrap col">
         <div>
           <div className="label">{stage} · 최종 점검</div>

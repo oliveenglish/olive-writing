@@ -13,6 +13,7 @@ export default async function Tasks() {
   const units = (await allUnits()).filter((u) => u.status === "published");
   const weak = await Promise.all(students.map((s) => weaknesses(s.id)));
   const { data: tasks } = await db().from("tasks").select("*, task_assignees(student_id,status,score)").eq("teacher_id", me.id).order("created_at", { ascending: false }).limit(20);
+  const stages = Array.from(new Set(units.map((u) => u.stage)));
   const names = new Map(students.map((s) => [s.id, s.name]));
   return (
     <>
@@ -38,9 +39,24 @@ export default async function Tasks() {
             <label className="row" style={{ gap: 8 }}><input type="radio" name="mode" value="units" /> <b>유닛 고르기</b></label>
             <label className="row" style={{ gap: 8 }}><input type="radio" name="mode" value="writing" /> <b>글쓰기만</b></label>
           </div>
-          <div className="label">유닛 (유닛 고르기일 때)</div>
-          <div className="row" style={{ gap: 6 }}>
-            {units.map((u) => <label key={u.id} className="chip gray" style={{ gap: 6 }}><input type="checkbox" name="units" value={u.id} />{u.id}</label>)}
+          <div className="label">유닛 (유닛 고르기일 때) · 단계를 눌러 펼쳐요</div>
+          <div className="col" style={{ gap: 6 }}>
+            {stages.map((st) => {
+              const list = units.filter((u) => u.stage === st);
+              return (
+                <details key={st} className="card tint" style={{ padding: "8px 12px" }}>
+                  <summary style={{ cursor: "pointer", fontWeight: 800 }}>{st} <span className="small muted">· 유닛 {list.length}개</span></summary>
+                  <div className="col" style={{ gap: 4, marginTop: 8 }}>
+                    {list.map((u) => (
+                      <label key={u.id} className="row" style={{ gap: 8, flexWrap: "nowrap", alignItems: "flex-start" }}>
+                        <input type="checkbox" name="units" value={u.id} style={{ marginTop: 4 }} />
+                        <span><b>{u.title}</b> <span className="small muted">{u.id}{u.scope ? ` · ${u.scope}` : ""}</span></span>
+                      </label>
+                    ))}
+                  </div>
+                </details>
+              );
+            })}
           </div>
           <div className="grid2">
             <label className="field"><span>문제 수</span>

@@ -14,6 +14,7 @@ export default function Join() {
             { name: "code", label: "반 코드", placeholder: "OLIVE-2412" },
             { name: "name", label: "내 이름", placeholder: "김하준" },
             { name: "grade", label: "학년", placeholder: "초4" },
+            { name: "nickname", label: "별명 (선택)", placeholder: "문장 장인" },
             { name: "username", label: "아이디 (영어 소문자 · 숫자)", placeholder: "hajun" },
             { name: "pin", label: "PIN 숫자 4자리", type: "password", inputMode: "numeric", maxLength: 4 },
           ]} />

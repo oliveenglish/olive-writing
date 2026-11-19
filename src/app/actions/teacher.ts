@@ -1,6 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { requireTeacher, studentPassword } from "@/lib/auth";
+import { requireTeacher, studentEmail, studentPassword } from "@/lib/auth";
 import { db, BUCKET } from "@/lib/supabase";
 import { allUnits, pickItemsForCodes, position, recordedWeakCodes, taughtCodes } from "@/lib/data";
 import { parseWorkbook, type Parsed } from "@/lib/importer";
@@ -19,6 +19,59 @@ export async function createClass(fd: FormData) {
 }
 
 /* ───── 학생 ───── */
+export type MakeStudentState = { error?: string; made?: { name: string; username: string; pin: string } } | undefined;
+
+/** 학생 이름 · 학년 · 별명 고치기 */
+export async function updateStudentInfo(studentId: string, fd: FormData) {
+  await requireTeacher();
+  const name = String(fd.get("name") || "").trim();
+  const patch: Record<string, string | null> = { grade: String(fd.get("grade") || "").trim() || null, nickname: String(fd.get("nickname") || "").trim() || null };
+  if (name) patch.name = name;
+  await db().from("profiles").update(patch).eq("id", studentId);
+  revalidatePath(`/teacher/students/${studentId}`);
+}
+
+/** 쌤이 학생 아이디 · PIN을 직접 만들어 주기 (반 코드 없이) */
+export async function makeStudent(_: MakeStudentState, fd: FormData): Promise<MakeStudentState> {
+  const me = await requireTeacher();
+  const name = String(fd.get("name") || "").trim();
+  const grade = String(fd.get("grade") || "").trim();
+  const nickname = String(fd.get("nickname") || "").trim() || null;
+  const username = String(fd.get("username") || "").trim().toLowerCase();
+  const pin = String(fd.get("pin") || "").trim();
+  let classId = String(fd.get("class_id") || "");
+  const start = String(fd.get("unit") || "");
+  if (!name || !username || !pin) return { error: "이름 · 아이디 · PIN을 채워 주세요." };
+  if (!/^[a-z0-9_]{3,20}$/.test(username)) return { error: "아이디는 영어 소문자 · 숫자 3~20자로 만들어요. (예: minji01)" };
+  if (!/^\d{4}$/.test(pin)) return { error: "PIN은 숫자 4자리예요." };
+  const { data: taken } = await db().from("profiles").select("id").eq("username", username).maybeSingle();
+  if (taken) return { error: `'${username}'은(는) 이미 있는 아이디예요. 다른 아이디로 해 주세요.` };
+  if (!classId) {
+    // 반을 안 고르면 '내 학생' 반에 넣어요 (없으면 만들어요)
+    const { data: c } = await db().from("classes").select("id").eq("teacher_id", me.id).order("created_at").limit(1).maybeSingle();
+    if (c) classId = c.id;
+    else {
+      const { data: nc, error } = await db().from("classes").insert({ name: "내 학생", code: "OLIVE-" + Math.floor(1000 + Math.random() * 9000), teacher_id: me.id }).select("id").single();
+      if (error || !nc) return { error: "반을 만들지 못했어요: " + (error?.message ?? "") };
+      classId = nc.id;
+    }
+  }
+  const { data: created, error } = await db().auth.admin.createUser({ email: studentEmail(username), password: studentPassword(pin), email_confirm: true });
+  if (error || !created.user) return { error: "계정을 만들지 못했어요: " + (error?.message ?? "") };
+  const { error: e2 } = await db().from("profiles").insert({ id: created.user.id, role: "student", name, grade, nickname, username, class_id: classId });
+  if (e2) {
+    await db().auth.admin.deleteUser(created.user.id);
+    return { error: "학생 정보를 저장하지 못했어요: " + e2.message };
+  }
+  if (start) {
+    const f = new FormData();
+    f.set("unit", start);
+    await setStartUnit(created.user.id, f);
+  }
+  revalidatePath("/teacher");
+  return { made: { name, username, pin } };
+}
+
 export async function setStartUnit(studentId: string, fd: FormData) {
   await requireTeacher();
   const target = String(fd.get("unit") || "");
@@ -179,12 +232,12 @@ export async function applyImport(fd: FormData): Promise<{ ok: boolean; message:
   if (p.problems.length) return { ok: false, message: "확인 필요 항목을 먼저 고쳐 주세요." };
   const d = db();
   const steps: [string, () => PromiseLike<{ error: { message: string } | null }>][] = [
-    ["유닛", () => d.from("units").upsert(p.units)],
-    ["오류 코드", () => d.from("error_codes").upsert(p.codes)],
-    ["설명 카드", () => d.from("unit_cards").upsert(p.cards)],
-    ["단어", () => d.from("words").upsert(p.words)],
-    ["문항", () => d.from("items").upsert(p.items)],
-    ["점검 소재", () => d.from("stage_topics").upsert(p.topics)],
+    ["유닛", () => d.from("units").upsert(uniq(p.units, (r) => r.id))],
+    ["오류 코드", () => d.from("error_codes").upsert(uniq(p.codes, (r) => r.code))],
+    ["설명 카드", () => d.from("unit_cards").upsert(uniq(p.cards, (r) => `${r.unit_id}|${r.ord}`))],
+    ["단어", () => d.from("words").upsert(uniq(p.words, (r) => `${r.unit_id}|${r.word}`))],
+    ["문항", () => d.from("items").upsert(uniq(p.items, (r) => r.id))],
+    ["점검 소재", () => d.from("stage_topics").upsert(uniq(p.topics, (r) => `${r.stage}|${r.no}`))],
   ];
   for (const [name, run] of steps) {
     const { error } = await run();
@@ -256,3 +309,10 @@ export async function markReportSent(studentId: string, month: string) {
   revalidatePath(`/teacher/report/${studentId}`);
 }
 
+
+
+/** 엑셀에 같은 줄(같은 키)이 두 번 있으면 첫 줄만 남겨요 — 저장할 때 충돌 방지 */
+function uniq<T>(rows: T[], key: (r: T) => string): T[] {
+  const seen = new Set<string>();
+  return rows.filter((r) => { const k = key(r); if (seen.has(k)) return false; seen.add(k); return true; });
+}

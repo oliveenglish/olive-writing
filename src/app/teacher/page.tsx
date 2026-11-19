@@ -2,7 +2,9 @@ import Link from "next/link";
 import { requireTeacher } from "@/lib/auth";
 import { db } from "@/lib/supabase";
 import { myStudents } from "@/lib/teacher";
-import { position, weaknesses } from "@/lib/data";
+import { allUnits, position, weaknesses } from "@/lib/data";
+import MakeStudent from "@/components/MakeStudent";
+import { headers } from "next/headers";
 import { addDays, iso, todayKST, weekStart } from "@/lib/dates";
 import { createClass } from "@/app/actions/teacher";
 
@@ -38,6 +40,8 @@ export default async function Dashboard() {
   const pending = (subs.data ?? []).length;
   const finals = (subs.data ?? []).filter((x) => x.kind === "final").length;
   const alerts = rows.filter((r) => r.fail);
+  const units = (await allUnits()).map((u) => ({ id: u.id, title: u.title, stage: u.stage }));
+  const host = headers().get("host");
   const activeRate = rows.length ? Math.round((rows.filter((r) => r.days > 0).length / rows.length) * 100) : 0;
 
   return (
@@ -82,10 +86,11 @@ export default async function Dashboard() {
                 </td>
               </tr>
             ))}
-            {!rows.length && <tr><td colSpan={7} className="muted">아직 학생이 없어요. 반 코드를 학생에게 알려 주세요. 학생은 첫 화면의 “반 코드로 시작하기”에서 가입해요.</td></tr>}
+            {!rows.length && <tr><td colSpan={7} className="muted">아직 학생이 없어요. 아래 ‘학생 계정 만들기’에서 아이디와 PIN을 만들어 주세요.</td></tr>}
           </tbody>
         </table>
       </div>
+      <MakeStudent classes={classes.map((c) => ({ id: c.id, name: c.name }))} units={units} siteUrl={host ? `https://${host}` : undefined} />
     </>
   );
 }

@@ -7,6 +7,7 @@ export type Profile = {
   name: string;
   username: string | null;
   grade: string | null;
+  nickname: string | null;
   class_id: string | null;
   start_unit: string | null;
   memo: string | null;
@@ -31,7 +32,9 @@ export async function requireStudent(): Promise<Profile> {
   const p = await currentProfile();
   if (!p) redirect("/login");
   if (p.role !== "student") redirect("/teacher");
-  await db().from("profiles").update({ last_seen_at: new Date().toISOString() }).eq("id", p.id);
+  // 접속 시간은 10분에 한 번만 저장 (문제마다 저장하면 느려져요)
+  if (!p.last_seen_at || Date.now() - new Date(p.last_seen_at).getTime() > 10 * 60 * 1000)
+    await db().from("profiles").update({ last_seen_at: new Date().toISOString() }).eq("id", p.id);
   return p;
 }
 

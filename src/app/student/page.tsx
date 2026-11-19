@@ -7,15 +7,37 @@ import StudentTop from "@/components/StudentTop";
 
 export const dynamic = "force-dynamic";
 
-function Mission({ n, href, sub, title, right, strong, gold }: { n: string; href?: string; sub: string; title: string; right?: string; strong?: boolean; gold?: boolean }) {
+type Tone = "new" | "again" | "check";
+const TONE: Record<Tone, { label: string; color: string; bg: string; icon: string }> = {
+  new: { label: "새로 배우기", color: "#1F3A6E", bg: "#EAF0FB", icon: "✨" },
+  again: { label: "다시 하기", color: "#C2561A", bg: "#FFF1E6", icon: "🔁" },
+  check: { label: "확인하기", color: "#4A6B2A", bg: "#EEF5E6", icon: "👀" },
+};
+
+function Mission({ n, href, sub, title, right, strong, gold, tone }: { n: string; href?: string; sub: string; title: string; right?: string; strong?: boolean; gold?: boolean; tone?: Tone }) {
+  const t = tone ? TONE[tone] : null;
+  const boxBg = t ? t.color : strong ? "var(--navy)" : gold ? "var(--gold)" : "var(--tint)";
   const inner = (
-    <div className={`card row ${strong ? "strong" : ""}`} style={{ gap: 18, flexWrap: "nowrap", ...(gold ? { borderColor: "var(--gold)", background: "var(--goldbg)" } : {}) }}>
-      <span style={{ width: 52, height: 52, flex: "none", borderRadius: 14, background: strong ? "var(--navy)" : gold ? "var(--gold)" : "var(--tint)", color: strong || gold ? "#fff" : "var(--navy)", fontWeight: 800, fontSize: 20, display: "flex", alignItems: "center", justifyContent: "center" }}>{n}</span>
-      <div style={{ flex: 1 }}>
-        <div className="label">{sub}</div>
-        <div style={{ fontSize: 20, fontWeight: 800, color: "var(--head)" }}>{title}</div>
+    <div
+      className={`card row ${strong && !t ? "strong" : ""}`}
+      style={{
+        gap: 18,
+        flexWrap: "nowrap",
+        ...(gold ? { borderColor: "var(--gold)", background: "var(--goldbg)" } : {}),
+        ...(t ? { borderColor: t.color, borderWidth: 2, background: tone === "again" ? t.bg : undefined } : {}),
+      }}
+    >
+      <span style={{ width: 52, height: 52, flex: "none", borderRadius: 14, background: boxBg, color: t || strong || gold ? "#fff" : "var(--navy)", fontWeight: 800, fontSize: tone === "again" ? 24 : 20, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {tone === "again" ? "🔁" : n}
+      </span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="row" style={{ gap: 8, alignItems: "center" }}>
+          {t && <span style={{ fontSize: 12, fontWeight: 800, color: t.color, background: t.bg, border: `1px solid ${t.color}`, borderRadius: 999, padding: "2px 10px" }}>{t.icon} {t.label}</span>}
+          <span className="label" style={{ margin: 0 }}>{sub}</span>
+        </div>
+        <div style={{ fontSize: 20, fontWeight: 800, color: "var(--head)", overflow: "hidden", textOverflow: "ellipsis" }}>{title}</div>
       </div>
-      {right && <span style={{ fontWeight: 800, color: "var(--navy)" }}>{right}</span>}
+      {right && <span style={{ fontWeight: 800, color: t?.color ?? "var(--navy)", flex: "none" }}>{right}</span>}
     </div>
   );
   return href ? <Link href={href} style={{ textDecoration: "none" }}>{inner}</Link> : inner;
@@ -51,7 +73,7 @@ export default async function StudentHome() {
 
   return (
     <>
-      <StudentTop name={me.name} extra={returned?.length ? <span className="chip">첨삭 도착 {returned.length}</span> : null} />
+      <StudentTop name={me.name} grade={me.grade} nickname={me.nickname} extra={returned?.length ? <span className="chip">첨삭 도착 {returned.length}</span> : null} />
       <main className="wrap side">
         <section className="col">
           <h1 className="title">오늘의 미션</h1>
@@ -62,23 +84,27 @@ export default async function StudentHome() {
             );
           })}
           {pos.type === "unit" && (
-            <Mission strong n={num()} href={`/student/unit/${encodeURIComponent(pos.unit.id)}`} sub={`${pos.progress?.step ? "이어서" : "새 유닛"} · ${pos.unit.id}`} title={pos.unit.title} right={`${Math.min((pos.progress?.step ?? 0) + 1, 7)} / 7 단계`} />
+            (pos.progress?.test_tries ?? 0) > 0 && !pos.progress?.passed ? (
+              <Mission tone="again" n={num()} href={`/student/unit/${encodeURIComponent(pos.unit.id)}`} sub={`확인 테스트 다시 도전 · ${pos.unit.id}`} title={pos.unit.title} right="재도전" />
+            ) : (
+              <Mission tone="new" n={num()} href={`/student/unit/${encodeURIComponent(pos.unit.id)}`} sub={`${pos.progress?.step ? "이어서" : "새 유닛"} · ${pos.unit.id}`} title={pos.unit.title} right={`${Math.min((pos.progress?.step ?? 0) + 1, 7)} / 7 단계`} />
+            )
           )}
           {pos.type === "final" && (
             <Mission strong n={num()} href={pos.submitted ? undefined : "/student/final"} sub={`${pos.stage} 끝!`} title={pos.submitted ? "최종 점검 제출 완료 · 쌤이 채점 중이에요" : "최종 점검 보기"} />
           )}
           {pos.type === "waiting" && <div className="card tint">다음 유닛을 쌤이 준비하고 있어요. 복습을 먼저 해요!</div>}
           {pos.type === "done" && <div className="card tint">모든 과정을 마쳤어요! 🎉</div>}
-          {due.length > 0 && <Mission n={num()} href="/student/review" sub="복습 · 다시 보기" title={`헷갈렸던 것 ${Math.min(due.length * 2, 8)}문제`} right="약 3분" />}
+          {due.length > 0 && <Mission tone="again" n={num()} href="/student/review" sub="복습" title={`헷갈렸던 것 ${Math.min(due.length * 2, 8)}문제`} right="약 3분" />}
           {(returned ?? []).map((s) => (
-            <Mission key={s.id as string} n={num()} href={`/student/feedback/${s.id}`} sub="첨삭 확인" title={`${s.title} · 쌤 첨삭 도착`} right="원본 / 첨삭본" />
+            <Mission key={s.id as string} tone="check" n={num()} href={`/student/feedback/${s.id}`} sub="쌤 첨삭 도착" title={`${s.title} · 쌤 첨삭 도착`} right="원본 / 첨삭본" />
           ))}
           {(rewrites ?? []).map((s) => (
-            <Mission key={`rw-${s.id}`} strong n={num()} href={`/student/feedback/${s.id}`} sub="고쳐 쓰기 · 다시 내기" title={`${s.title} · 첨삭 보고 고쳐 써요`} right="고쳐 쓰기" />
+            <Mission key={`rw-${s.id}`} tone="again" n={num()} href={`/student/feedback/${s.id}`} sub="고쳐 쓰기 · 다시 내기" title={`${s.title} · 첨삭 보고 고쳐 써요`} right="고쳐 쓰기" />
           ))}
           {weekly && weekly.status === "pending" && (
             weeklyOpen ? (
-              <Mission strong n={num()} href="/student/weekly" sub="주간 점검 · 지금 볼 수 있어요" title={`이번 주 배운 것 섞어서 10문제`} />
+              <Mission tone="check" n={num()} href="/student/weekly" sub="주간 점검 · 지금 볼 수 있어요" title={`이번 주 배운 것 섞어서 10문제`} />
             ) : (
               <div className="card tint">
                 <div className="label">{weekly.available_from.slice(5).replace("-", "/")} (금)부터</div>

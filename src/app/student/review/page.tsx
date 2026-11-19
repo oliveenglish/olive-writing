@@ -15,7 +15,7 @@ export default async function Review() {
   const items = await pickItemsForCodes(me.id, codes, Math.min(Math.max(codes.length * 2, 5), 8));
   return (
     <>
-      <StudentTop name={me.name} />
+      <StudentTop name={me.name} grade={me.grade} nickname={me.nickname} />
       <main className="wrap col" style={{ maxWidth: 860 }}>
         <h1 className="title">오늘의 복습</h1>
         {items.length ? (

@@ -4,7 +4,7 @@ import { requireTeacher } from "@/lib/auth";
 import { db } from "@/lib/supabase";
 import { allUnits, position, progressMap, weaknesses, weeklyRun } from "@/lib/data";
 import { addDays, monthKey, todayKST, weekStart } from "@/lib/dates";
-import { resetPin, saveMemo, setStartUnit, weeklyPostpone, weeklySkip } from "@/app/actions/teacher";
+import { resetPin, saveMemo, updateStudentInfo, setStartUnit, weeklyPostpone, weeklySkip } from "@/app/actions/teacher";
 
 export const dynamic = "force-dynamic";
 
@@ -110,6 +110,15 @@ export default async function StudentDetail({ params }: { params: { id: string }
             <form action={saveMemo.bind(null, s.id)} className="col">
               <textarea name="memo" className="textarea" style={{ fontSize: 15 }} defaultValue={s.memo ?? ""} />
               <button className="btn ghost sm">저장</button>
+            </form>
+          </div>
+          <div className="card col">
+            <h3 style={{ fontSize: 17 }}>이름 · 학년 · 별명</h3>
+            <form action={updateStudentInfo.bind(null, s.id)} className="col" style={{ gap: 8 }}>
+              <input name="name" className="input" defaultValue={s.name} placeholder="이름" />
+              <input name="grade" className="input" defaultValue={s.grade ?? ""} placeholder="학년 (G4 · 초5)" />
+              <input name="nickname" className="input" defaultValue={s.nickname ?? ""} placeholder="별명" />
+              <button className="btn sm">저장</button>
             </form>
           </div>
           <div className="card col">
