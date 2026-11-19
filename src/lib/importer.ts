@@ -95,6 +95,15 @@ export function parseWorkbook(buf: ArrayBuffer): Parsed {
       bubble: s(r["캐릭터 말풍선"]) || null,
       why: s(r["왜 틀렸는지 한 줄"]) || null,
     }));
+  // 같은 코드가 두 줄 있으면 처음 줄만 써요 (저장할 때 충돌 방지)
+  const dupCodes: string[] = [];
+  const codesUniq = codes.filter((c, i) => {
+    const first = codes.findIndex((x) => x.code === c.code) === i;
+    if (!first) dupCodes.push(c.code);
+    return first;
+  });
+  codes.length = 0;
+  codes.push(...codesUniq);
   const codeSet = new Set(codes.map((c) => c.code));
 
   const itemRows = sheet(wb, "문항");
