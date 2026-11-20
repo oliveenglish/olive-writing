@@ -1,35 +1,21 @@
 import Link from "next/link";
 import AuthForm from "@/components/AuthForm";
-import { loginStudent, loginTeacher } from "@/app/actions/auth";
+import { loginAny } from "@/app/actions/auth";
 
-export default function Login({ searchParams }: { searchParams: { tab?: string } }) {
-  const teacher = searchParams.tab === "teacher";
+/** 로그인 하나: 학생은 아이디 + PIN, 쌤은 이메일 + 비밀번호 */
+export default function Login() {
   return (
     <>
       <header className="top"><Link href="/" className="brand"><b>올리브</b> 라이팅</Link></header>
       <main className="narrow col">
-        <div className="tabs">
-          <Link href="/login" className={teacher ? "" : "on"}>학생</Link>
-          <Link href="/login?tab=teacher" className={teacher ? "on" : ""}>쌤</Link>
-        </div>
+        <h1 className="title">로그인</h1>
         <div className="card col">
-          {teacher ? (
-            <AuthForm action={loginTeacher} submit="쌤 로그인" fields={[
-              { name: "email", label: "이메일", type: "email", inputMode: "email" },
-              { name: "password", label: "비밀번호", type: "password" },
-            ]} />
-          ) : (
-            <AuthForm action={loginStudent} submit="들어가기" fields={[
-              { name: "username", label: "아이디" },
-              { name: "pin", label: "PIN 4자리", type: "password", inputMode: "numeric", maxLength: 4 },
-            ]} />
-          )}
+          <AuthForm action={loginAny} submit="로그인" fields={[
+            { name: "id", label: "아이디 (쌤은 이메일)" },
+            { name: "pw", label: "비밀번호 (PIN)", type: "password" },
+          ]} />
         </div>
-        {teacher ? (
-          <Link href="/teacher-signup" className="small">쌤 계정 처음 만들기</Link>
-        ) : (
-          <Link href="/join" className="small">처음이에요 · 반 코드로 시작하기</Link>
-        )}
+        <Link href="/teacher-signup" className="small muted" style={{ alignSelf: "flex-end", opacity: 0.6 }}>쌤 계정 만들기</Link>
       </main>
     </>
   );

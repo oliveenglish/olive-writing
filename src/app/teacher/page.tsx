@@ -6,7 +6,6 @@ import { allUnits, position, weaknesses } from "@/lib/data";
 import MakeStudent from "@/components/MakeStudent";
 import { headers } from "next/headers";
 import { addDays, iso, todayKST, weekStart } from "@/lib/dates";
-import { createClass } from "@/app/actions/teacher";
 
 export const dynamic = "force-dynamic";
 
@@ -53,18 +52,10 @@ export default async function Dashboard() {
         </div>
         <Link href="/teacher/tasks" className="btn ghost sm">+ 추가 과제 내기</Link>
       </div>
-      <div className="grid4">
+      <div className="grid4" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
         <Link href="/teacher/grading" className="card" style={{ textDecoration: "none" }}><div className="label">첨삭 대기</div><div className="big">{pending}</div><div className="small muted">최종 점검 {finals}</div></Link>
         <div className={`card ${alerts.length ? "warn" : ""}`}><div className="label">알림 · 2번 연속 미통과</div><div className="big" style={alerts.length ? { color: "var(--red2)" } : {}}>{alerts.length}</div><div className="small">{alerts.map((r) => `${r.s.name} · ${r.fail?.unit_id}`).join(", ")}</div></div>
         <div className="card"><div className="label">이번 주 공부한 학생</div><div className="big">{activeRate}%</div><div className="small muted">2일 이상 안 들어온 학생 {rows.filter((r) => r.inactive).length}명</div></div>
-        <div className="card col" style={{ gap: 8 }}>
-          <div className="label">반 코드</div>
-          {classes.map((c) => <div key={c.id} className="row" style={{ justifyContent: "space-between" }}><span>{c.name}</span><b className="en">{c.code}</b></div>)}
-          <form action={createClass} className="row" style={{ flexWrap: "nowrap" }}>
-            <input name="name" className="input" style={{ minHeight: 38, fontSize: 14, padding: "6px 10px" }} placeholder="새 반 이름" />
-            <button className="btn sm">만들기</button>
-          </form>
-        </div>
       </div>
       <div className="tablebox">
         <table className="t">

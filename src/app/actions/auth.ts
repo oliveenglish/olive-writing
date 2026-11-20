@@ -5,6 +5,22 @@ import { studentEmail, studentPassword, teacherEmails } from "@/lib/auth";
 
 export type FormState = { error?: string; ok?: string } | undefined;
 
+/** 로그인 하나로: @가 있으면 쌤(이메일 · 비밀번호), 없으면 학생(아이디 · PIN) */
+export async function loginAny(s: FormState, fd: FormData): Promise<FormState> {
+  const id = String(fd.get("id") || "").trim();
+  const pw = String(fd.get("pw") || "");
+  if (!id || !pw) return { error: "아이디와 비밀번호(PIN)를 입력해 주세요." };
+  const f = new FormData();
+  if (id.includes("@")) {
+    f.set("email", id);
+    f.set("password", pw);
+    return loginTeacher(s, f);
+  }
+  f.set("username", id);
+  f.set("pin", pw);
+  return loginStudent(s, f);
+}
+
 export async function loginStudent(_: FormState, fd: FormData): Promise<FormState> {
   const username = String(fd.get("username") || "").trim().toLowerCase();
   const pin = String(fd.get("pin") || "").trim();

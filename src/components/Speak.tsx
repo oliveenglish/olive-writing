@@ -9,18 +9,19 @@ export function clean(text: string) {
   return text.replace(/\*\*/g, "").replace(/\s*\|\s*/g, ", ").replace(/[✕✗]/g, " 틀림 ").replace(/[○✓]/g, " 맞음 ").replace(/→/g, ", ");
 }
 
-export function speak(text: string, lang?: "ko-KR" | "en-US") {
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+export function speak(text: string, lang?: "ko-KR" | "en-US", onEnd?: () => void) {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) { onEnd?.(); return; }
   const synth = window.speechSynthesis;
   synth.cancel();
-  const parts = lang ? [{ t: text, l: lang }] : splitByLang(clean(text));
-  for (const p of parts) {
-    if (!p.t.trim()) continue;
+  const parts = (lang ? [{ t: text, l: lang }] : splitByLang(clean(text))).filter((p) => p.t.trim());
+  if (!parts.length) { onEnd?.(); return; }
+  parts.forEach((p, k) => {
     const u = new SpeechSynthesisUtterance(p.t);
     u.lang = p.l;
     u.rate = p.l === "en-US" ? 0.9 : 1;
+    if (k === parts.length - 1 && onEnd) { u.onend = onEnd; u.onerror = onEnd; }
     synth.speak(u);
-  }
+  });
 }
 
 export function stopSpeak() {

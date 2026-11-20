@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import QuizRunner from "./QuizRunner";
 import Olly from "./Olly";
@@ -9,7 +9,7 @@ import { speak, stopSpeak, Tap } from "./Speak";
 import type { PublicItem } from "@/lib/grading";
 import { checkItem, saveStep, submitAnswers, submitTest, type QuizResult } from "@/app/actions/student";
 
-const STEPS = ["단어", "설명", "단어 배열", "틀린 문장", "한글 → 영어", "대답 쓰기", "확인 테스트"];
+const STEPS = ["단어 익히기", "설명", "단어 배열", "틀린 문장", "한글 → 영어", "대답 쓰기", "확인 테스트"];
 
 type Card = { ord: number; title: string; body: string; audio_url?: string | null; check_q?: string | null; check_a?: string | null; check_choices?: string | null };
 type Word = { grp: string | null; word: string; meaning: string | null };
@@ -63,6 +63,7 @@ export default function UnitPlayer({
 }) {
   const hand = items.hand?.[0];
   const [step, setStepState] = useState(Math.min(Math.max(startStep, 0), 6));
+  const [maxStep, setMaxStep] = useState(Math.min(Math.max(startStep, 0), 6)); // 지금까지 간 가장 먼 단계 (뒤로 가도 진도는 안 줄어요)
   const [cardIdx, setCardIdx] = useState(0);
   const [checked, setChecked] = useState<Record<number, boolean>>({});
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -76,7 +77,9 @@ export default function UnitPlayer({
   const go = (s: number) => {
     setStepState(s);
     setRound((r) => r + 1);
-    saveStep(unit.id, s);
+    const m = Math.max(maxStep, s);
+    setMaxStep(m);
+    saveStep(unit.id, m);
     window.scrollTo(0, 0);
   };
   // 2단계: PREP은 고르기 + 단어 배열, 기초부터는 단어 배열
@@ -143,7 +146,6 @@ export default function UnitPlayer({
         key={`${step}-${round}`}
         items={list}
         instant
-        showReason={step === 3}
         check={(id, r, reason, attempt) => checkItem(id, r, "unit", reason, attempt)}
         onDone={() => go(step + 1)}
       />
@@ -266,7 +268,15 @@ export default function UnitPlayer({
         </div>
         <div className="steps">
           {STEPS.map((s, k) => (
-            <span key={s} className={k < step ? "done" : k === step ? "now" : ""}>{k + 1} {s}</span>
+            <span
+              key={s}
+              className={k === step ? "now" : k < maxStep ? "done" : ""}
+              title={k <= maxStep && k !== step ? "눌러서 다시 보기" : undefined}
+              style={k <= maxStep && k !== step ? { cursor: "pointer" } : undefined}
+              onClick={k <= maxStep && k !== step ? () => { stopSpeak(); setStepState(k); setRound((r) => r + 1); setCardIdx(0); window.scrollTo(0, 0); } : undefined}
+            >
+              {k + 1} {s}
+            </span>
           ))}
         </div>
       </header>
@@ -276,15 +286,32 @@ export default function UnitPlayer({
 }
 
 
-/** 🔊 듣기: 쌤 음성 파일이 있으면 그것, 없으면 AI 음성 */
+/** 🔊 듣기 ↔ ⏹ 멈추기: 쌤 음성 파일이 있으면 그것, 없으면 AI 음성 */
 function ListenButton({ card }: { card: Card }) {
-  const play = () => {
-    if (card.audio_url) {
-      stopSpeak();
-      new Audio(card.audio_url).play().catch(() => speak(`${card.title}. ${card.body}`));
-    } else speak(`${card.title}. ${card.body}`);
+  const [on, setOn] = useState(false);
+  const audio = useRef<HTMLAudioElement | null>(null);
+  useEffect(() => () => { audio.current?.pause(); stopSpeak(); }, [card.ord]);
+  const stop = () => {
+    audio.current?.pause();
+    audio.current = null;
+    stopSpeak();
+    setOn(false);
   };
-  return <button type="button" className="btn ghost" style={{ padding: "6px 12px" }} onClick={play}>🔊 듣기</button>;
+  const play = () => {
+    stop();
+    setOn(true);
+    if (card.audio_url) {
+      const a = new Audio(card.audio_url);
+      audio.current = a;
+      a.onended = () => setOn(false);
+      a.play().catch(() => speak(`${card.title}. ${card.body}`, undefined, () => setOn(false)));
+    } else speak(`${card.title}. ${card.body}`, undefined, () => setOn(false));
+  };
+  return on ? (
+    <button type="button" className="btn" style={{ padding: "6px 12px" }} onClick={stop}>⏹ 멈추기</button>
+  ) : (
+    <button type="button" className="btn ghost" style={{ padding: "6px 12px" }} onClick={play}>🔊 듣기</button>
+  );
 }
 
 /** 카드 끝 확인 한 문제 — 맞혀야 다음 설명으로 */

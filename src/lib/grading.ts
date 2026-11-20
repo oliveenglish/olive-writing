@@ -106,6 +106,7 @@ export type Mark = { w: string; bad: boolean };
 const toks = (s: string) =>
   s
     .replace(/[’‘`]/g, "'")
+    .replace(/\s+([,.?!;:])/g, "$1") // "live ?" → "live?" (문장부호 카드는 앞 단어에 붙여서 비교)
     .split(/\s+/)
     .map((w) => w.trim())
     .filter(Boolean);

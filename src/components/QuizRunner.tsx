@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import ItemInput from "./ItemInput";
 import Olly from "./Olly";
@@ -38,8 +38,36 @@ export default function QuizRunner({
   const [result, setResult] = useState<QuizResult | null>(null);
   const [atExtra, setAtExtra] = useState(false);
   const [attempt, setAttempt] = useState(1); // 문장 쓰기류 다시 풀기용 (기록은 첫 답만)
+  const [done, setDone] = useState<Record<string, CheckResult>>({}); // 이미 채점한 문제 (이전으로 돌아가 볼 때)
 
   const item = items[i];
+  const viewing = !!(item && done[item.id] && fb === done[item.id]); // 이미 푼 문제를 다시 보는 중
+
+  function back() {
+    if (i === 0) return;
+    const nextDone = instant && fb && !fb.retry ? { ...done, [item.id]: fb } : done;
+    if (instant && fb && !fb.retry) setDone(nextDone);
+    setI(i - 1);
+    setAttempt(1);
+    setFb(instant ? nextDone[items[i - 1].id] ?? null : null);
+  }
+
+  // 키보드 Enter = [확인] / [다음 문제]
+  const nextRef = useRef<() => void>(() => {});
+  const canNext = !busy && !!item && (!!fb || !!(values[item.id] ?? "").trim());
+  nextRef.current = () => { if (canNext) next(); };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Enter" || e.isComposing) return;
+      const t = e.target as HTMLElement | null;
+      if (t?.tagName === "BUTTON") return; // 버튼 위에서는 브라우저가 알아서 눌러요
+      if (t?.tagName === "TEXTAREA" && !(e.ctrlKey || e.metaKey)) return; // 긴 글은 Ctrl+Enter
+      e.preventDefault();
+      nextRef.current();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
   const val = item ? values[item.id] ?? "" : "";
   const last = i === items.length - 1;
 
@@ -65,9 +93,15 @@ export default function QuizRunner({
       setAttempt(2);
       return;
     }
+    const nextDone = instant && fb ? { ...done, [item.id]: fb } : done;
+    if (instant && fb) setDone(nextDone);
     setFb(null);
     setAttempt(1);
-    if (!last) return setI(i + 1);
+    if (!last) {
+      setI(i + 1);
+      if (instant) setFb(nextDone[items[i + 1].id] ?? null);
+      return;
+    }
     if (extra) return setAtExtra(true);
     await submitAll();
   }
@@ -115,6 +149,7 @@ export default function QuizRunner({
       </div>
       <div className="card col" style={{ gap: 18 }}>
         <ItemInput key={item.id} item={item} value={val} onChange={(v) => setValues({ ...values, [item.id]: v })} disabled={!!fb} />
+        {viewing && <div className="small muted">이미 푼 문제예요. [다음 문제]로 넘어가요.</div>}
         {showReason && item.activity === "find" && (
           <label className="field">
             <span>왜 틀렸을까? (우리말로 짧게)</span>
@@ -125,7 +160,7 @@ export default function QuizRunner({
         {fb && <Feedback fb={fb} />}
       </div>
       <div className="row" style={{ justifyContent: "space-between" }}>
-        <button className="btn ghost" disabled={i === 0 || !!fb || instant} onClick={() => setI(i - 1)}>이전</button>
+        <button className="btn ghost" disabled={i === 0 || busy || !!fb?.retry || attempt === 2 || (!instant && !!fb)} onClick={back}>이전</button>
         <button className="btn" disabled={busy || (!val.trim() && !fb)} onClick={next}>
           {busy ? "잠깐만요…" : instant && !fb ? "확인" : fb?.retry ? "다시 풀기" : last ? (extra ? "다음" : instant ? "끝내기" : "제출하기") : "다음 문제"}
         </button>

@@ -67,13 +67,16 @@ export default function ItemInput({
       ) : item.kind === "arrange" ? (
         <>
           <div className="tray">
-            {picked.length === 0 && <span className="muted small">여기에 문장이 만들어져요</span>}
+            {picked.length === 0 && (disabled && value ? <span className="en" style={{ fontWeight: 800, fontSize: 20 }}>{value}</span> : <span className="muted small">여기에 문장이 만들어져요</span>)}
             {picked.map((i, k) => (
               <button key={k} type="button" className="wcard on" disabled={disabled} onClick={() => setPicked(picked.filter((_, x) => x !== k))}>
                 {cards[i]}
               </button>
             ))}
           </div>
+          {picked.length > 0 && !disabled && (
+            <button type="button" className="btn ghost sm" style={{ alignSelf: "flex-start" }} onClick={() => setPicked([])}>↺ 처음부터 다시 놓기</button>
+          )}
           <div className="row">
             {order
               .filter((i) => !picked.includes(i))

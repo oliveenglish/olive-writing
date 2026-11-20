@@ -87,7 +87,7 @@ export default async function StudentHome() {
             (pos.progress?.test_tries ?? 0) > 0 && !pos.progress?.passed ? (
               <Mission tone="again" n={num()} href={`/student/unit/${encodeURIComponent(pos.unit.id)}`} sub={`확인 테스트 다시 도전 · ${pos.unit.id}`} title={pos.unit.title} right="재도전" />
             ) : (
-              <Mission tone="new" n={num()} href={`/student/unit/${encodeURIComponent(pos.unit.id)}`} sub={`${pos.progress?.step ? "이어서" : "새 유닛"} · ${pos.unit.id}`} title={pos.unit.title} right={`${Math.min((pos.progress?.step ?? 0) + 1, 7)} / 7 단계`} />
+              <Mission tone="new" n={num()} href={`/student/unit/${encodeURIComponent(pos.unit.id)}`} sub={`${pos.progress?.step ? "이어서" : "새 유닛"} · ${pos.unit.id}`} title={pos.unit.title} />
             )
           )}
           {pos.type === "final" && (
