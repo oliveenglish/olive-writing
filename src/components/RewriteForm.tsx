@@ -11,7 +11,11 @@ export default function RewriteForm({ parentId, original, photoFirst }: { parent
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
+  const norm = (t: string) => t.replace(/\s+/g, " ").trim();
+  const ready = !!photo || (!!norm(text) && norm(text) !== norm(original ?? ""));
+
   async function send() {
+    if (!ready) return;
     setBusy(true);
     const fd = new FormData();
     if (text.trim() && text.trim() !== (original ?? "").trim()) fd.append("text", text);
@@ -41,7 +45,8 @@ export default function RewriteForm({ parentId, original, photoFirst }: { parent
         </label>
       )}
       {msg && <div className="small"><b>{msg}</b></div>}
-      <button className="btn" disabled={busy} onClick={send}>{busy ? "보내는 중…" : "고쳐 쓴 글 보내기"}</button>
+      {!ready && <div className="small muted">처음 글에서 고친 곳이 있어야 보낼 수 있어요. (고쳐 쓴 종이 사진을 올려도 돼요)</div>}
+      <button className="btn" disabled={busy || !ready} onClick={send}>{busy ? "보내는 중…" : "고쳐 쓴 글 보내기"}</button>
     </div>
   );
 }

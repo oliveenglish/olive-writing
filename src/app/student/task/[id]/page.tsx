@@ -26,6 +26,12 @@ export default async function TaskPage({ params }: { params: { id: string } }) {
           <div className="label">쌤이 낸 과제</div>
           <h1 className="title">{task?.title ?? "과제"}</h1>
           {task?.message && <div className="card tint" style={{ marginTop: 10 }}>쌤: {task.message}</div>}
+          {task?.writing_prompt && (
+            <div className="card col" style={{ marginTop: 10, gap: 4, borderColor: "var(--gold)", background: "var(--goldbg)" }}>
+              <b className="small">✏️ 글쓰기 주제 {items.length ? "(문제를 다 풀면 마지막에 써요)" : ""}</b>
+              <div className="en" style={{ fontSize: 20, fontWeight: 800 }}>{task.writing_prompt}</div>
+            </div>
+          )}
         </div>
         {!a || a.status === "done" ? (
           <div className="card col">이미 끝낸 과제예요. <Link href="/student" className="btn">홈으로</Link></div>

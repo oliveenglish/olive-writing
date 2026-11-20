@@ -1,3 +1,4 @@
+import { kst } from "@/lib/dates";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireTeacher } from "@/lib/auth";
@@ -16,7 +17,12 @@ export default async function GradeOne({ params }: { params: { id: string } }) {
   if (!s) notFound();
   const { data: st } = await db().from("profiles").select("name,grade").eq("id", s.student_id).single();
   const [photo, markup, codes] = await Promise.all([signedUrl(s.photo_path), signedUrl(s.markup_path), taughtCodes(s.student_id)]);
-  const { data: nextOne } = await db().from("submissions").select("id").eq("status", "submitted").neq("id", s.id).order("created_at").limit(1);
+  // 고쳐 쓴 글이면 몇 번째인지 (처음 글까지 거슬러 올라가요)
+  let round = 1;
+  for (let pid = s.parent_id as string | null; pid && round < 10; round++) {
+    const { data: up } = await db().from("submissions").select("parent_id").eq("id", pid).maybeSingle();
+    pid = up?.parent_id ?? null;
+  }
   // 고쳐 쓰기면 원래 글 · 쌤 첨삭을 함께 보여 줘요
   const { data: parent } = s.parent_id ? await db().from("submissions").select("*").eq("id", s.parent_id).maybeSingle() : { data: null };
   const [pPhoto, pMarkup] = parent ? await Promise.all([signedUrl(parent.photo_path), signedUrl(parent.markup_path)]) : [null, null];
@@ -26,7 +32,14 @@ export default async function GradeOne({ params }: { params: { id: string } }) {
       <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-end" }}>
         <div>
           <Link href="/teacher/grading" className="small" style={{ fontWeight: 700 }}>← 첨삭 목록</Link>
-          <div className="label">{String(s.created_at).slice(0, 16).replace("T", " ")} 제출 {s.rubric?.part1 ? `· 파트 1 문법 ${s.rubric.part1}` : ""}</div>
+          <div className="label">{kst(s.created_at).slice(0, 16).replace("T", " ")} 제출 {s.rubric?.part1 ? `· 파트 1 문법 ${s.rubric.part1}` : ""}</div>
+          <div className="row" style={{ gap: 8, alignItems: "center", marginTop: 4 }}>
+            {s.parent_id ? (
+              <span style={{ fontSize: 13, fontWeight: 800, color: "#C2561A", background: "#FFF1E6", border: "1px solid #C2561A", borderRadius: 999, padding: "3px 12px" }}>🔁 고쳐 쓴 글 · {round}번째 제출</span>
+            ) : (
+              <span style={{ fontSize: 13, fontWeight: 800, color: "#1F3A6E", background: "#EAF0FB", border: "1px solid #1F3A6E", borderRadius: 999, padding: "3px 12px" }}>✨ 새 과제 · 처음 제출</span>
+            )}
+          </div>
           <h1 className="title">{st?.name} · {s.title}</h1>
         </div>
         {aiEnabled() && (
@@ -69,7 +82,7 @@ export default async function GradeOne({ params }: { params: { id: string } }) {
         codes={codes.map((c) => ({ code: c.code, name: c.name }))}
         initial={{ corrected: s.corrected_text, comment: s.teacher_comment, codes: s.error_codes ?? [], rubric: s.rubric ?? {}, decision: s.decision, rewrite: s.status === "returned" ? !!s.rewrite_wanted : !s.parent_id }}
         returned={s.status === "returned"}
-        nextHref={nextOne?.[0] ? `/teacher/grading/${nextOne[0].id}` : "/teacher/grading"}
+        nextHref={`/teacher/grading?student=${s.student_id}`}
       />
     </>
   );

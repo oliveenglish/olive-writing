@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { requireTeacher } from "@/lib/auth";
 import { db } from "@/lib/supabase";
 import { buildReport } from "@/lib/report";
-import { monthKey, todayKST } from "@/lib/dates";
+import { monthKey, todayKST, kst } from "@/lib/dates";
 import ReportView from "@/components/ReportView";
 import PrintButton from "@/components/PrintButton";
 import { markReportSent, saveReport } from "@/app/actions/teacher";
@@ -43,7 +43,7 @@ export default async function Report({ params, searchParams }: { params: { id: s
               <b>학부모에게 보내기</b>
               <div className="small muted">아래 링크를 카카오톡으로 보내면 로그인 없이 볼 수 있어요.</div>
               <input className="input small" readOnly value={`${origin}/r/${rep.token}`} style={{ fontSize: 13 }} />
-              <form action={markReportSent.bind(null, params.id, month)}><button className="btn ghost sm">{rep.sent_at ? `보냄 · ${String(rep.sent_at).slice(5, 10)}` : "보냈다고 표시"}</button></form>
+              <form action={markReportSent.bind(null, params.id, month)}><button className="btn ghost sm">{rep.sent_at ? `보냄 · ${kst(rep.sent_at).slice(5, 10)}` : "보냈다고 표시"}</button></form>
             </div>
           ) : (
             <div className="card small muted">한마디를 저장하면 학부모용 링크가 생겨요.</div>

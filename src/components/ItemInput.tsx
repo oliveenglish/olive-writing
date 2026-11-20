@@ -1,13 +1,13 @@
 "use client";
 import { Pic } from "./Speak";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { PublicItem } from "@/lib/grading";
 
 const HINT: Record<string, string> = {
   arrange: "카드를 순서대로 눌러 문장을 만들어요.",
   blank: "빈칸에 들어갈 말을 써요.",
   ko: "영어 문장으로 써요.",
-  fix: "틀린 곳을 고쳐서 문장 전체를 다시 써요.",
+  fix: "문장 속 틀린 표현을 찾아 고친 뒤, 문장 전체를 다시 써요.",
   transform: "화살표(→) 뒤의 모양으로 바꿔서 문장 전체를 써요.",
   answer: "질문에 영어 문장으로 대답해요.",
   choose: "알맞은 것을 골라요.",
@@ -42,6 +42,14 @@ export default function ItemInput({
   const cards = item.kind === "arrange" ? item.prompt.replace(/\s*\([^)]*\)\s*$/, "").split(" / ").map((s) => s.trim()) : [];
   const [order] = useState(() => shuffle(cards.map((_, i) => i), item.id));
   const [picked, setPicked] = useState<number[]>([]);
+  // 카드를 아주 빨리 두 번 누르면(더블클릭) 옆 카드가 같이 들어가는 걸 막아요
+  const lastTap = useRef(0);
+  const tap = (fn: () => void) => {
+    const now = Date.now();
+    if (now - lastTap.current < 250) return;
+    lastTap.current = now;
+    fn();
+  };
 
   useEffect(() => {
     if (item.kind !== "arrange") return;
@@ -69,7 +77,7 @@ export default function ItemInput({
           <div className="tray">
             {picked.length === 0 && (disabled && value ? <span className="en" style={{ fontWeight: 800, fontSize: 20 }}>{value}</span> : <span className="muted small">여기에 문장이 만들어져요</span>)}
             {picked.map((i, k) => (
-              <button key={k} type="button" className="wcard on" disabled={disabled} onClick={() => setPicked(picked.filter((_, x) => x !== k))}>
+              <button key={k} type="button" className="wcard on" disabled={disabled} onClick={() => tap(() => setPicked((p) => p.filter((_, x) => x !== k)))}>
                 {cards[i]}
               </button>
             ))}
@@ -81,14 +89,14 @@ export default function ItemInput({
             {order
               .filter((i) => !picked.includes(i))
               .map((i) => (
-                <button key={i} type="button" className="wcard" disabled={disabled} onClick={() => setPicked([...picked, i])}>
+                <button key={i} type="button" className="wcard" disabled={disabled} onClick={() => tap(() => setPicked((p) => (p.includes(i) ? p : [...p, i])))}>
                   {cards[i]}
                 </button>
               ))}
           </div>
         </>
       ) : item.kind === "answer" ? (
-        <textarea className="textarea en" value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} placeholder="I am …" />
+        <textarea className="textarea en" value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} placeholder="영어 문장으로 써요" />
       ) : (
         <input
           className="input en"

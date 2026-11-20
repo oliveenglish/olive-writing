@@ -9,7 +9,7 @@ import { speak, stopSpeak, Tap } from "./Speak";
 import type { PublicItem } from "@/lib/grading";
 import { checkItem, saveStep, submitAnswers, submitTest, type QuizResult } from "@/app/actions/student";
 
-const STEPS = ["단어 익히기", "설명", "단어 배열", "틀린 문장", "한글 → 영어", "대답 쓰기", "확인 테스트"];
+const STEPS = ["단어 익히기", "설명", "단어 배열", "틀린 표현 고치기", "한글 → 영어", "대답 쓰기", "확인 테스트"];
 
 type Card = { ord: number; title: string; body: string; audio_url?: string | null; check_q?: string | null; check_a?: string | null; check_choices?: string | null };
 type Word = { grp: string | null; word: string; meaning: string | null };

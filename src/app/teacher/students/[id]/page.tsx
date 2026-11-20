@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { requireTeacher } from "@/lib/auth";
 import { db } from "@/lib/supabase";
 import { allUnits, position, progressMap, weaknesses, weeklyRun } from "@/lib/data";
-import { addDays, monthKey, todayKST, weekStart } from "@/lib/dates";
+import { addDays, monthKey, todayKST, weekStart, kst } from "@/lib/dates";
 import { resetPin, saveMemo, updateStudentInfo, setStartUnit, weeklyPostpone, weeklySkip } from "@/app/actions/teacher";
 
 export const dynamic = "force-dynamic";
@@ -32,7 +32,7 @@ export default async function StudentDetail({ params }: { params: { id: string }
       <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-end" }}>
         <div>
           <Link href="/teacher" className="small" style={{ fontWeight: 700 }}>← 반 전체</Link>
-          <h1 className="title">{s.name} · {s.grade} <span className="small muted">아이디 {s.username} · 시작 {String(s.created_at).slice(0, 10)}</span></h1>
+          <h1 className="title">{s.name} · {s.grade} <span className="small muted">아이디 {s.username} · 시작 {kst(s.created_at).slice(0, 10)}</span></h1>
         </div>
         <div className="row">
           <Link href="/teacher/tasks" className="btn ghost sm">+ 추가 과제 내기</Link>

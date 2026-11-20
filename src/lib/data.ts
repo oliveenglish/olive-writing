@@ -154,8 +154,8 @@ export async function weeklyRun(studentId: string) {
     .from("attempts")
     .select("unit_id")
     .eq("student_id", studentId)
-    .in("context", ["unit", "test"])
-    .gte("created_at", ws.toISOString());
+    .eq("context", "test") // 확인 테스트까지 본 유닛만 (유닛 연습만 한 주는 주간 점검이 안 생겨요)
+    .gte("created_at", new Date(ws.getTime() - 9 * 3600 * 1000).toISOString()); // 한국 시간 월요일 0시부터
   const unitIds = Array.from(new Set((touched ?? []).map((r) => r.unit_id).filter(Boolean))) as string[];
   if (!unitIds.length) return null;
   const ins = {

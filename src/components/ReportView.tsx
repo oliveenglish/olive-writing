@@ -1,3 +1,4 @@
+import { kst } from "@/lib/dates";
 import type { ReportData } from "@/lib/report";
 
 const clip = (s: string | null | undefined) => (s ?? "").split("\n").filter((l) => !l.startsWith("Q")).join(" ").replace(/A\.\s*/g, "").slice(0, 400);
@@ -31,8 +32,8 @@ export default function ReportView({ r, month, comment }: { r: ReportData; month
         <div className="card col">
           <b>글쓰기 변화 · 처음과 지금</b>
           <div className="grid2">
-            {r.firstWriting && <div className="paper en small"><div className="label">{String(r.firstWriting.created_at).slice(5, 10)} · {r.firstWriting.title}</div>{clip(r.firstWriting.text_content)}</div>}
-            {r.lastWriting && <div className="paper en small"><div className="label">{String(r.lastWriting.created_at).slice(5, 10)} · {r.lastWriting.title}</div>{clip(r.lastWriting.corrected_text || r.lastWriting.text_content)}</div>}
+            {r.firstWriting && <div className="paper en small"><div className="label">{kst(r.firstWriting.created_at).slice(5, 10)} · {r.firstWriting.title}</div>{clip(r.firstWriting.text_content)}</div>}
+            {r.lastWriting && <div className="paper en small"><div className="label">{kst(r.lastWriting.created_at).slice(5, 10)} · {r.lastWriting.title}</div>{clip(r.lastWriting.corrected_text || r.lastWriting.text_content)}</div>}
           </div>
         </div>
       )}

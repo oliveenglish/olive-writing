@@ -107,3 +107,25 @@ table.t td { padding: 12px 14px; border-top: 1px solid var(--line); vertical-ali
 .del { color: var(--red); text-decoration: line-through; }
 .ins { color: var(--red); font-weight: 700; }
 @media print { .noprint { display: none !important; } body { background: #fff; } }
+
+/* ───── 접속(로그인) 화면 ───── */
+.login { display: grid; grid-template-columns: 1.15fr 1fr; min-height: 100vh; }
+.login-side { background: #1f3a5f; color: #fff; display: flex; align-items: center; padding: 56px; }
+.login-side-in { max-width: 520px; }
+.login-kicker { font-size: 15px; font-weight: 800; letter-spacing: 3px; color: #a9b8d0; margin-bottom: 14px; }
+.login-title { color: #fff; font-size: 56px; line-height: 1.08; font-weight: 800; letter-spacing: -1.5px; margin: 0; }
+.login-sub { font-size: 20px; line-height: 1.6; color: #d6deeb; margin: 22px 0 0; }
+.login-main { background: var(--bg); display: flex; align-items: center; justify-content: center; padding: 40px 28px; }
+.login-box { width: 100%; max-width: 380px; text-align: center; }
+.login-h { font-size: 30px; font-weight: 800; color: #1f3a5f; }
+.login-hint { font-size: 16px; color: var(--muted); margin: 8px 0 26px; }
+.login-box .field { text-align: left; }
+.login-box .field span { font-size: 16px; }
+.login-box .input { font-size: 19px; min-height: 58px; }
+.login-box .btn { width: 100%; min-height: 58px; font-size: 19px; border-radius: 14px; background: #1f3a5f; }
+@media (max-width: 760px) {
+  .login { grid-template-columns: 1fr; }
+  .login-side { padding: 40px 28px; }
+  .login-title { font-size: 40px; }
+  .login-sub { font-size: 17px; }
+}

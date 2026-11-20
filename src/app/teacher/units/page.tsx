@@ -6,7 +6,7 @@ import { CardBody } from "@/components/UnitPlayer";
 
 export const dynamic = "force-dynamic";
 
-const ACT: Record<string, string> = { choose: "고르기", arrange: "단어 배열", find: "틀린 문장", ko2en: "한글 → 영어", answer: "대답 쓰기", test: "확인 테스트", hand: "손글씨 2부" };
+const ACT: Record<string, string> = { choose: "고르기", arrange: "단어 배열", find: "틀린 표현 고치기", ko2en: "한글 → 영어", answer: "대답 쓰기", test: "확인 테스트", hand: "손글씨 2부" };
 
 /** 쌤용 유닛 보기: 단계 → 유닛 → 설명 카드 · 단어 · 문항 수 (학생 화면 그대로) */
 export default async function Units({ searchParams }: { searchParams: { stage?: string; unit?: string } }) {

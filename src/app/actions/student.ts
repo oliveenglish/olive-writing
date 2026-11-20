@@ -241,17 +241,22 @@ export async function finishReview(responses: Resp[]): Promise<QuizResult> {
 export async function finishWeekly(weekStart: string, responses: Resp[]): Promise<QuizResult> {
   const me = await requireStudent();
   const g = await gradeBatch(me.id, responses, "weekly");
-  for (const w of g.writing) {
-    await createSubmission({
-      student: me,
-      kind: "weekly",
-      ref: weekStart,
-      title: `주간 점검 (${weekStart} 주) · 질문에 대답하기`,
-      text: `Q. ${w.item.prompt}\nA. ${w.response}`,
-      photo: null,
-    });
-  }
+  // 먼저 '끝냄'으로 저장 (그래야 다음에 로그인해도 다시 안 떠요)
   await db().from("weekly_runs").update({ status: "done", score: g.score, total: g.total }).eq("student_id", me.id).eq("week_start", weekStart);
+  for (const w of g.writing) {
+    try {
+      await createSubmission({
+        student: me,
+        kind: "weekly",
+        ref: weekStart,
+        title: `주간 점검 (${weekStart} 주) · 질문에 대답하기`,
+        text: `Q. ${w.item.prompt}\nA. ${w.response}`,
+        photo: null,
+      });
+    } catch (e) {
+      console.error("주간 점검 글 저장 실패", e);
+    }
+  }
   // 쌤 기준: 10문제 중 3개까지 틀리면 인정 (7 · 8 · 9 · 10개 맞음) / 4개 이상 틀리면 (6개 이하) 복습
   const wrongCount = g.total - g.score;
   const passed = wrongCount <= 3;

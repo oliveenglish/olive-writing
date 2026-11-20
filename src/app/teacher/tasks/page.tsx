@@ -2,7 +2,7 @@ import { requireTeacher } from "@/lib/auth";
 import { db } from "@/lib/supabase";
 import { myStudents } from "@/lib/teacher";
 import { allUnits, weaknesses } from "@/lib/data";
-import { addDays, iso, todayKST } from "@/lib/dates";
+import { addDays, iso, todayKST, kst } from "@/lib/dates";
 import { createTask } from "@/app/actions/teacher";
 
 export const dynamic = "force-dynamic";
@@ -76,7 +76,7 @@ export default async function Tasks() {
             const done = as.filter((a) => a.status === "done");
             return (
               <div key={t.id} className="card tint" style={{ padding: 12 }}>
-                <b>{t.title}</b> <span className="small muted">· {String(t.created_at).slice(5, 10)}{t.due_date ? ` · 마감 ${String(t.due_date).slice(5)}` : ""}</span>
+                <b>{t.title}</b> <span className="small muted">· {kst(t.created_at).slice(5, 10)}{t.due_date ? ` · 마감 ${String(t.due_date).slice(5)}` : ""}</span>
                 <div className="small">{as.length}명 중 {done.length}명 완료</div>
                 <div className="small muted">{as.map((a) => `${names.get(a.student_id) ?? ""}${a.status === "done" ? ` ✓${a.score ?? ""}` : ""}`).join(" · ")}</div>
               </div>

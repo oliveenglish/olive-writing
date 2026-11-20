@@ -22,7 +22,7 @@ export default async function DbPage() {
       <DbUpload />
       <div className="tablebox">
         <table className="t">
-          <thead><tr><th>단계 · 유닛</th><th>단어</th><th>배열</th><th>틀린 문장</th><th>한글→영어</th><th>대답</th><th>확인 테스트</th><th>복습 · 점검용</th><th>학생 화면</th></tr></thead>
+          <thead><tr><th>단계 · 유닛</th><th>단어</th><th>배열</th><th>틀린 표현</th><th>한글→영어</th><th>대답</th><th>확인 테스트</th><th>복습 · 점검용</th><th>학생 화면</th></tr></thead>
           <tbody>
             {units.map((u) => (
               <tr key={u.id}>

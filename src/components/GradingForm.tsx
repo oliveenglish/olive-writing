@@ -176,7 +176,7 @@ export default function GradingForm({
           <input type="checkbox" checked={rewrite} onChange={(e) => setRewrite(e.target.checked)} />
           <span className="small"><b>고쳐 쓰기 요청</b> — 학생이 첨삭을 보고 고쳐서 다시 내요</span>
         </label>
-        <button className="btn" disabled={busy} onClick={submit}>{busy ? "저장 중…" : returned ? "고쳐서 다시 보내기" : "학생에게 보내고 다음 →"}</button>
+        <button className="btn" disabled={busy} onClick={submit}>{busy ? "저장 중…" : returned ? "고쳐서 다시 보내기" : "학생에게 보내기"}</button>
       </aside>
     </div>
   );

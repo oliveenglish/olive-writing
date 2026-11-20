@@ -28,7 +28,7 @@ export default function QuizRunner({
   showReason?: boolean;
   doneHref?: string;
   onDone?: (r: QuizResult | null) => void;
-  extra?: { render: () => React.ReactNode; collect: () => FormData };
+  extra?: { render: () => React.ReactNode; collect: () => FormData; ready?: () => boolean };
 }) {
   const [i, setI] = useState(0);
   const [values, setValues] = useState<Record<string, string>>({});
@@ -135,7 +135,11 @@ export default function QuizRunner({
     return (
       <div className="col">
         {extra.render()}
-        <button className="btn" disabled={busy} onClick={submitAll}>{busy ? "보내는 중…" : "제출하기"}</button>
+        {extra.ready && !extra.ready() && <div className="small muted">글을 쓰거나 손글씨 사진을 올려야 제출할 수 있어요.</div>}
+        <div className="row" style={{ justifyContent: "space-between" }}>
+          <button className="btn ghost" disabled={busy} onClick={() => setAtExtra(false)}>이전</button>
+          <button className="btn" disabled={busy || (extra.ready ? !extra.ready() : false)} onClick={submitAll}>{busy ? "보내는 중…" : "제출하기"}</button>
+        </div>
       </div>
     );
 
@@ -148,7 +152,7 @@ export default function QuizRunner({
         {!instant && <span className="muted small">다 풀고 한꺼번에 채점해요</span>}
       </div>
       <div className="card col" style={{ gap: 18 }}>
-        <ItemInput key={item.id} item={item} value={val} onChange={(v) => setValues({ ...values, [item.id]: v })} disabled={!!fb} />
+        <ItemInput key={item.id} item={item} value={val} onChange={(v) => setValues({ ...values, [item.id]: v })} disabled={!!fb || busy} />
         {viewing && <div className="small muted">이미 푼 문제예요. [다음 문제]로 넘어가요.</div>}
         {showReason && item.activity === "find" && (
           <label className="field">

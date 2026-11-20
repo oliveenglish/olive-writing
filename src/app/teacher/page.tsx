@@ -5,7 +5,7 @@ import { myStudents } from "@/lib/teacher";
 import { allUnits, position, weaknesses } from "@/lib/data";
 import MakeStudent from "@/components/MakeStudent";
 import { headers } from "next/headers";
-import { addDays, iso, todayKST, weekStart } from "@/lib/dates";
+import { addDays, iso, todayKST, weekStart, kst } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +29,7 @@ export default async function Dashboard() {
       const pos = await position(s.id);
       const weak = await weaknesses(s.id);
       const w = (weekly.data ?? []).find((x) => x.student_id === s.id);
-      const days = new Set(a.map((x) => String(x.created_at).slice(0, 10))).size;
+      const days = new Set(a.map((x) => kst(x.created_at).slice(0, 10))).size;
       const fail = (fails.data ?? []).find((x) => x.student_id === s.id);
       const pend = (subs.data ?? []).filter((x) => x.student_id === s.id).length;
       const inactive = !s.last_seen_at || new Date(s.last_seen_at) < addDays(todayKST(), -2);

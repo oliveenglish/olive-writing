@@ -16,3 +16,11 @@ export function weekStart(d: Date): Date {
 export function monthKey(d: Date) {
   return iso(d).slice(0, 7);
 }
+
+/** 저장된 시간(UTC)을 한국 시간 글자로: "2026-11-20T09:53:00" 모양 (slice로 잘라 써요) */
+export function kst(ts: string | null | undefined): string {
+  if (!ts) return "";
+  const t = new Date(ts).getTime();
+  if (isNaN(t)) return String(ts);
+  return new Date(t + 9 * 3600 * 1000).toISOString();
+}

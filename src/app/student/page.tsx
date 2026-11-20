@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireStudent } from "@/lib/auth";
 import { db } from "@/lib/supabase";
 import { allUnits, dueReviews, position, progressMap, weaknesses, weeklyRun } from "@/lib/data";
-import { addDays, iso, todayKST, weekStart } from "@/lib/dates";
+import { addDays, iso, todayKST, weekStart, kst } from "@/lib/dates";
 import StudentTop from "@/components/StudentTop";
 
 export const dynamic = "force-dynamic";
@@ -63,7 +63,7 @@ export default async function StudentHome() {
   const graded = (weekAttempts ?? []).filter((a) => a.correct !== null);
   const acc = graded.length ? Math.round((graded.filter((a) => a.correct).length / graded.length) * 100) : null;
   const sentences = (weekAttempts ?? []).filter((a) => ["ko2en", "answer", "find"].includes(a.activity as string)).length;
-  const days = new Set((weekAttempts ?? []).map((a) => String(a.created_at).slice(0, 10))).size;
+  const days = new Set((weekAttempts ?? []).map((a) => kst(a.created_at).slice(0, 10))).size;
 
   const stage = pos.type === "unit" ? pos.unit.stage : pos.type === "final" || pos.type === "waiting" ? pos.stage : units.at(-1)?.stage;
   const stageUnits = units.filter((u) => u.stage === stage);
