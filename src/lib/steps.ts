@@ -29,17 +29,18 @@ export function groupOf(days: number[] | null | undefined): Group | null {
   return d === "2,4" ? "tt" : d === "1,3" ? "mw" : null;
 }
 /**
- * 반마다 단계별 요일 (수업은 저녁이라 월 · 수 반은 월요일 수업 전에 ①②)
+ * 반마다 단계별 요일
  *   화 · 목 반: 월 ①② · 화 ③ 수업 · 수 ④⑤ · 목 ⑥ 수업 · 금 ⑦
- *   월 · 수 반: 월 ①② → ③ 수업 · 화 ④⑤ · 수 ⑥ 수업 · 목 ⑦ · 금 밀린 것
+ *   월 · 수 반: 일 ①② (수업 전날) · 월 ③ 수업 · 화 ④⑤ · 수 ⑥ 수업 · 목 ⑦ · 금 밀린 것
  */
 const SCHEDULE: Record<Group, Record<number, string>> = {
   tt: { 1: "월", 2: "월", 3: "화", 4: "수", 5: "수", 6: "목", 7: "금" },
-  mw: { 1: "월", 2: "월", 3: "월", 4: "화", 5: "화", 6: "수", 7: "목" },
+  mw: { 1: "일", 2: "일", 3: "월", 4: "화", 5: "화", 6: "수", 7: "목" },
 };
 export const dayOf = (n: number, g: Group | null) => SCHEDULE[g ?? "tt"][n];
-/** 요일별 단계 번호 (월~금, 빈 날은 []) */
-export const scheduleOf = (g: Group | null) => DAYS.map((d) => ({ day: d, steps: STEPS.filter((s) => dayOf(s.n, g) === d).map((s) => s.n) }));
+/** 요일별 단계 번호 (화 · 목 반 월~금 / 월 · 수 반 일~금, 빈 날은 []) */
+export const scheduleOf = (g: Group | null) =>
+  (g === "mw" ? ["일", ...DAYS] : DAYS).map((d) => ({ day: d, steps: STEPS.filter((s) => dayOf(s.n, g) === d).map((s) => s.n) }));
 export const groupLabel = (g: Group | null) => GROUPS.find((x) => x.key === g)?.label ?? "수업 반 미정";
 
 export const WORD_ACTS = [

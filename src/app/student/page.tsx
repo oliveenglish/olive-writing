@@ -36,7 +36,7 @@ export default async function StudentHome() {
         <span className="num">{s.status === "done" ? <ICheck /> : n}</span>
         <span style={{ flex: 1, minWidth: 0 }}>
           <span className="tt">{step.title}</span>
-          <span className="nn">{s.note || (group === "mw" && (n === 1 || n === 2) ? `월요일 수업 전에 · ${step.sub}` : step.sub)}</span>
+          <span className="nn">{s.note || (group === "mw" && (n === 1 || n === 2) ? `월요일 수업 전날 · ${step.sub}` : step.sub)}</span>
         </span>
         {step.type === "class" ? (
           <ClassToggle unitId={unit.id} k={n === 3 ? "class1" : "class2"} done={s.status === "done"} />
