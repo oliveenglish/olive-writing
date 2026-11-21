@@ -58,7 +58,7 @@ export default async function StudentHome() {
   };
 
   return (
-    <div className="app">
+    <div className="app wide">
       <header className="hero">
         <div className="row" style={{ justifyContent: "space-between" }}>
           <span style={{ fontSize: 14, fontWeight: 700, color: "#e3edcb" }}>올리브 라이팅</span>
@@ -82,6 +82,7 @@ export default async function StudentHome() {
           </a>
         )}
         <div style={{ fontSize: 16, fontWeight: 900, color: "var(--head)" }}>이번 주 할 일</div>
+        <div className="week">
         {scheduleOf(group).map(({ day: d, steps }) => {
           const isToday = d === today;
           if (!steps.length)
@@ -101,6 +102,7 @@ export default async function StudentHome() {
             </div>
           );
         })}
+        </div>
         {done === 7 && <div className="bubble ok">이번 유닛 끝! 쌤이 다시 쓰기를 확인하면 다음 유닛이 열려요.</div>}
       </main>
 
