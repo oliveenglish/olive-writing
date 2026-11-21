@@ -205,3 +205,14 @@ table.t td { padding: 11px 12px; border-top: 1px solid #e6e9df; vertical-align: 
 .fb.red .tt { color: var(--red); }
 .newdot { display: inline-block; margin-left: 6px; vertical-align: 2px; font-size: 10px; font-weight: 900; color: #fff; background: var(--red); border-radius: 999px; padding: 1px 6px; }
 @media (min-width: 900px) { .notice { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); } .notice > .row { grid-column: 1 / -1; } }
+
+/* 학습 기록 */
+.hist summary { display: flex; align-items: center; gap: 10px; cursor: pointer; list-style: none; }
+.hist summary::-webkit-details-marker { display: none; }
+.hist[open] summary > .muted { visibility: hidden; }
+.histstats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; margin-top: 12px; }
+.histstats > div { background: var(--bg); border-radius: 12px; padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; }
+.histstats span { font-size: 11px; color: var(--muted); font-weight: 700; }
+.histstats b { font-size: 15px; color: var(--head); }
+.histgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 12px; }
+@media (min-width: 900px) { .histgrid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); } }

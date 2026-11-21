@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { requireTeacher, type Profile } from "@/lib/auth";
 import { db } from "@/lib/supabase";
 import { stepStates, unitOf } from "@/lib/progress";
+import { historyOf } from "@/lib/history";
+import HistoryList from "@/components/HistoryList";
 import { allUnits } from "@/lib/content";
 import { GROUPS, STEPS, dayOf, groupOf } from "@/lib/steps";
 import { kst } from "@/lib/dates";
@@ -16,7 +18,7 @@ export default async function StudentDetail({ params }: { params: { id: string }
   const s = data as Profile | null;
   if (!s || s.role !== "student") notFound();
   const unit = unitOf(s);
-  const states = await stepStates(s.id, unit.id);
+  const [states, hist] = await Promise.all([stepStates(s.id, unit.id), historyOf(s.id, unit.id)]);
   const units = allUnits();
   const group = groupOf(s.class_days);
   const stages = Array.from(new Set(units.map((u) => u.stage)));
@@ -24,7 +26,7 @@ export default async function StudentDetail({ params }: { params: { id: string }
     <>
       <div>
         <Link href="/teacher" className="small" style={{ fontWeight: 700 }}>← 이번 주 진행</Link>
-        <h1 className="title">{s.name} <span className="small muted">아이디 {s.username} · 시작 {kst(s.created_at).slice(0, 10)}</span></h1>
+        <h1 className="title">{s.name} <span className="small muted">아이디 {s.username} · 시작 {kst(s.created_at).slice(0, 10)}</span> <a href="#history" className="btn ghost sm" style={{ marginLeft: 8, verticalAlign: "middle" }}>학습 기록 보기 ↓</a></h1>
       </div>
       <div className="side2" style={{ alignItems: "start" }}>
         <div className="card col">
@@ -82,6 +84,10 @@ export default async function StudentDetail({ params }: { params: { id: string }
           </form>
         </div>
       </div>
+      <section id="history" className="col" style={{ gap: 12 }}>
+        <h2 style={{ fontSize: 18 }}>학습 기록 <span className="small muted">끝낸 유닛 {hist.filter((h) => h.state === "done").length}개 · 유닛을 누르면 펼쳐져요</span></h2>
+        <HistoryList list={hist} />
+      </section>
     </>
   );
 }

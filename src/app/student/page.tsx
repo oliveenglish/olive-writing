@@ -123,6 +123,7 @@ export default async function StudentHome() {
           );
         })}
         </div>
+        <Link href="/student/history" className="btn ghost block">📚 내 과제 모음 · 지난 첨삭 보기</Link>
         {done === 7 && <div className="bubble ok">이번 유닛 끝! 쌤이 다시 쓰기를 확인하면 다음 유닛이 열려요.</div>}
       </main>
 
