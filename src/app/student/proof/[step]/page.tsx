@@ -45,15 +45,15 @@ export default async function ProofPage({ params }: { params: { step: string } }
               <div className="grid2">
                 <div className="col" style={{ gap: 6 }}>
                   <span className="label">내가 쓴 글</span>
-                  {p5Photo && <a href={p5Photo} target="_blank" rel="noreferrer" className="photo"><img src={p5Photo} alt="내가 쓴 글" /></a>}
+                  {p5Photo && p5 && <Link href={`/view/${p5.id}?only=photo`} className="photo"><img src={p5Photo} alt="내가 쓴 글" /></Link>}
                 </div>
                 <div className="col" style={{ gap: 6 }}>
                   <span className="label" style={{ color: "var(--red)" }}>쌤 첨삭</span>
                   {p5Photo && (
-                    <a href={p5Markup ?? p5Photo} target="_blank" rel="noreferrer" className="photo" style={{ border: "2px solid var(--red)" }}>
+                    <Link href={`/view/${p5!.id}`} className="photo" style={{ border: "2px solid var(--red)" }}>
                       <img src={p5Photo} alt="" />
                       {p5Markup && <img className="overlay" src={p5Markup} alt="쌤 첨삭" />}
-                    </a>
+                    </Link>
                   )}
                 </div>
               </div>
@@ -83,7 +83,7 @@ export default async function ProofPage({ params }: { params: { step: string } }
                 {mine.status === "submitted" ? (step === 5 ? "쌤이 첨삭 중" : "쌤 확인 중") : mine.decision === "redo" ? "다시 써 와요" : step === 5 ? "첨삭 완료" : "쌤 확인 ✓"}
               </span>
             </div>
-            {myPhoto && <a href={myPhoto} target="_blank" rel="noreferrer" className="photo" style={{ maxWidth: 260 }}><img src={myPhoto} alt="올린 사진" /></a>}
+            {myPhoto && mine && <Link href={`/view/${mine.id}`} className="photo" style={{ maxWidth: 260 }}><img src={myPhoto} alt="올린 사진" /></Link>}
             {mine.comment && step !== 5 && <div className="bubble no" style={mine.decision === "redo" ? undefined : { background: "var(--tint)", color: "var(--olive2)" }}>쌤: {mine.comment}</div>}
             {step === 5 && mine.status === "returned" && <Link href="/student/proof/7" className="btn block">⑦ 첨삭 보러 가기</Link>}
           </section>

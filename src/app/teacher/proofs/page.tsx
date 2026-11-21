@@ -27,8 +27,8 @@ export default async function Proofs({ searchParams }: { searchParams: { done?: 
     list.map(async (p) => {
       let before: ProofCard["before"] = null;
       if (p.step === 7) {
-        const { data: p5 } = await db().from("proofs").select("photo_path,markup_path").eq("student_id", p.student_id).eq("unit_id", p.unit_id).eq("step", 5).eq("status", "returned").order("created_at", { ascending: false }).limit(1).maybeSingle();
-        if (p5) before = { photo: await signedUrl(p5.photo_path), markup: await signedUrl(p5.markup_path) };
+        const { data: p5 } = await db().from("proofs").select("id,photo_path,markup_path").eq("student_id", p.student_id).eq("unit_id", p.unit_id).eq("step", 5).eq("status", "returned").order("created_at", { ascending: false }).limit(1).maybeSingle();
+        if (p5) before = { id: p5.id, photo: await signedUrl(p5.photo_path), markup: await signedUrl(p5.markup_path) };
       }
       return {
         id: p.id,

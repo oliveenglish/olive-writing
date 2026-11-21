@@ -15,7 +15,7 @@ export type ProofCard = {
   decision: string | null;
   comment: string | null;
   /** ⑦이면 ⑤ 첨삭본을 옆에 */
-  before?: { photo: string | null; markup: string | null } | null;
+  before?: { id: string; photo: string | null; markup: string | null } | null;
 };
 
 const STEP_NAME: Record<number, string> = { 2: "② 워크북 단어 학습", 5: "⑤ 쌤 숙제", 7: "⑦ 다시 쓰기" };
@@ -49,10 +49,10 @@ export default function CheckCard({ c }: { c: ProofCard }) {
           <div className="col" style={{ gap: 4 }}>
             <span className="small" style={{ color: "var(--red)", fontWeight: 800 }}>⑤ 쌤 첨삭본</span>
             {c.before.photo && (
-              <a href={c.before.markup ?? c.before.photo} target="_blank" rel="noreferrer" className="photo">
+              <Link href={`/view/${c.before.id}`} className="photo">
                 <img src={c.before.photo} alt="⑤ 원본" />
                 {c.before.markup && <img className="overlay" src={c.before.markup} alt="" />}
-              </a>
+              </Link>
             )}
           </div>
           <div className="col" style={{ gap: 4 }}>
