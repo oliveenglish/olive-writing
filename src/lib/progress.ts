@@ -1,0 +1,86 @@
+/** 학생 진행 상황 (서버 전용) */
+import { db, BUCKET } from "./supabase";
+import { firstUnit, getUnit, setCount, type Unit } from "./content";
+import { SENT_ACTS, WORD_ACTS, sentKey, wordKey, type StepState } from "./steps";
+
+export type Proof = {
+  id: string;
+  student_id: string;
+  unit_id: string;
+  step: number;
+  photo_path: string;
+  status: "submitted" | "returned";
+  decision: string | null;
+  markup_path: string | null;
+  comment: string | null;
+  seen: boolean;
+  created_at: string;
+  returned_at: string | null;
+};
+
+/** 학생이 지금 하는 유닛 (쌤이 안 정했으면 첫 유닛) */
+export function unitOf(p: { current_unit: string | null }): Unit {
+  return getUnit(p.current_unit) ?? firstUnit();
+}
+
+export async function checksOf(studentId: string, unitId: string): Promise<Map<string, { score: number | null; total: number | null }>> {
+  const { data } = await db().from("app_checks").select("key,score,total").eq("student_id", studentId).eq("unit_id", unitId);
+  return new Map((data ?? []).map((r) => [r.key as string, { score: r.score as number | null, total: r.total as number | null }]));
+}
+
+/** 단계별 가장 최근 인증 */
+export async function latestProofs(studentId: string, unitId: string): Promise<Map<number, Proof>> {
+  const { data } = await db().from("proofs").select("*").eq("student_id", studentId).eq("unit_id", unitId).order("created_at", { ascending: false });
+  const m = new Map<number, Proof>();
+  for (const p of (data as Proof[]) ?? []) if (!m.has(p.step)) m.set(p.step, p);
+  return m;
+}
+
+/** 7단계 상태 */
+export async function stepStates(studentId: string, unitId: string): Promise<StepState[]> {
+  const [checks, proofs] = await Promise.all([checksOf(studentId, unitId), latestProofs(studentId, unitId)]);
+  const sets = setCount(unitId);
+  const count = (keys: string[]) => keys.filter((k) => checks.has(k)).length;
+  const wordKeys = Array.from({ length: sets }, (_, i) => WORD_ACTS.map((a) => wordKey(i + 1, a.key))).flat();
+  const sentKeys = Array.from({ length: sets }, (_, i) => SENT_ACTS.map((a) => sentKey(i + 1, a.key))).flat();
+  const setsDone = (prefix: "w" | "s", acts: readonly { key: string }[]) =>
+    Array.from({ length: sets }, (_, i) => acts.every((a) => checks.has(`${prefix}${i + 1}-${a.key}`))).filter(Boolean).length;
+
+  const app = (n: number, keys: string[], prefix: "w" | "s", acts: readonly { key: string }[]): StepState => {
+    const c = count(keys);
+    if (c === keys.length) return { n, status: "done", note: `Set ${sets}개 모두 끝` };
+    if (c > 0) return { n, status: "doing", note: `Set ${setsDone(prefix, acts)} / ${sets} 끝` };
+    return { n, status: "todo", note: "" };
+  };
+  const proof = (n: number): StepState => {
+    const p = proofs.get(n);
+    if (!p) return { n, status: "todo", note: "" };
+    if (p.status === "submitted") return { n, status: "wait", note: n === 5 ? "쌤이 첨삭 중" : "쌤 확인 중" };
+    if (p.decision === "redo") return { n, status: "again", note: "다시 써서 올려요" };
+    return { n, status: "done", note: n === 5 ? "첨삭 완료" : "쌤 확인 ✓" };
+  };
+  const cls = (n: number, key: string): StepState => (checks.has(key) ? { n, status: "done", note: "참석" } : { n, status: "todo", note: "" });
+
+  const s7 = proof(7);
+  const p5 = proofs.get(5);
+  let step7 = s7;
+  if (s7.status === "todo") {
+    if (!p5 || p5.status !== "returned") step7 = { n: 7, status: "locked", note: "쌤 첨삭이 오면 열려요" };
+    else if (!p5.seen) step7 = { n: 7, status: "new", note: "첨삭 도착!" };
+  }
+  return [
+    app(1, wordKeys, "w", WORD_ACTS),
+    proof(2),
+    cls(3, "class1"),
+    app(4, sentKeys, "s", SENT_ACTS),
+    proof(5),
+    cls(6, "class2"),
+    step7,
+  ];
+}
+
+export async function signedUrl(path: string | null | undefined): Promise<string | null> {
+  if (!path) return null;
+  const { data } = await db().storage.from(BUCKET).createSignedUrl(path, 60 * 60);
+  return data?.signedUrl ?? null;
+}

@@ -9,9 +9,8 @@ export type Profile = {
   grade: string | null;
   nickname: string | null;
   class_id: string | null;
-  start_unit: string | null;
   memo: string | null;
-  ai_autosend: boolean | null;
+  current_unit: string | null;
   class_days: number[] | null;
   last_seen_at: string | null;
   created_at: string;

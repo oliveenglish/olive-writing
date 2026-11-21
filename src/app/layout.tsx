@@ -3,10 +3,10 @@ import type { Metadata, Viewport } from "next";
 
 export const metadata: Metadata = {
   title: "올리브 라이팅",
-  description: "초등부터 B1 에세이까지, 한 계단씩",
+  description: "단어 → 문장 → 글쓰기, 매주 한 유닛씩",
   manifest: "/manifest.webmanifest",
 };
-export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#1B2F5B" };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#4C6B1F" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

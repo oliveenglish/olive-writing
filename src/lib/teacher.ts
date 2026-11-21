@@ -11,11 +11,12 @@ export async function myStudents(teacherId: string) {
   return { classes: classes ?? [], students: (students as Profile[]) ?? [] };
 }
 
+/** 확인 · 첨삭 기다리는 인증 사진 수 */
 export async function pendingCount(teacherId: string) {
   const { students } = await myStudents(teacherId);
   if (!students.length) return 0;
   const { count } = await db()
-    .from("submissions")
+    .from("proofs")
     .select("id", { count: "exact", head: true })
     .eq("status", "submitted")
     .in("student_id", students.map((s) => s.id));

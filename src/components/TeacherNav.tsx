@@ -3,11 +3,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const ITEMS = [
-  ["/teacher", "반 전체"],
-  ["/teacher/grading", "첨삭 · 채점"],
-  ["/teacher/units", "유닛 보기"],
-  ["/teacher/db", "문항 DB"],
-  ["/teacher/tasks", "추가 과제"],
+  ["/teacher", "이번 주 진행"],
+  ["/teacher/proofs", "인증 · 첨삭"],
+  ["/teacher/words", "단어 · 예문 엑셀"],
 ] as const;
 
 export default function TeacherNav({ pending }: { pending: number }) {
@@ -15,11 +13,11 @@ export default function TeacherNav({ pending }: { pending: number }) {
   return (
     <>
       {ITEMS.map(([href, label]) => {
-        const on = href === "/teacher" ? path === "/teacher" || path.startsWith("/teacher/students") || path.startsWith("/teacher/report") : path.startsWith(href);
+        const on = href === "/teacher" ? path === "/teacher" || path.startsWith("/teacher/students") : path.startsWith(href);
         return (
           <Link key={href} href={href} className={on ? "on" : ""}>
             {label}
-            {href === "/teacher/grading" && pending > 0 && <span className="n">{pending}</span>}
+            {href === "/teacher/proofs" && pending > 0 && <span className="n">{pending}</span>}
           </Link>
         );
       })}

@@ -1,9 +1,12 @@
 {
   "name": "olive-writing",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "private": true,
   "scripts": {
+    "words": "node scripts/build-words.mjs",
+    "predev": "node scripts/build-words.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/build-words.mjs",
     "build": "next build",
     "start": "next start"
   },

@@ -9,7 +9,7 @@ export function clean(text: string) {
   return text.replace(/\*\*/g, "").replace(/\s*\|\s*/g, ", ").replace(/[✕✗]/g, " 틀림 ").replace(/[○✓]/g, " 맞음 ").replace(/→/g, ", ");
 }
 
-export function speak(text: string, lang?: "ko-KR" | "en-US", onEnd?: () => void) {
+export function speak(text: string, lang?: "ko-KR" | "en-US", onEnd?: () => void, rate?: number) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) { onEnd?.(); return; }
   const synth = window.speechSynthesis;
   synth.cancel();
@@ -18,7 +18,7 @@ export function speak(text: string, lang?: "ko-KR" | "en-US", onEnd?: () => void
   parts.forEach((p, k) => {
     const u = new SpeechSynthesisUtterance(p.t);
     u.lang = p.l;
-    u.rate = p.l === "en-US" ? 0.9 : 1;
+    u.rate = rate ?? (p.l === "en-US" ? 0.9 : 1);
     if (k === parts.length - 1 && onEnd) { u.onend = onEnd; u.onerror = onEnd; }
     synth.speak(u);
   });
