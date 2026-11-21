@@ -10,6 +10,7 @@ alter table words add column if not exists ord int default 0;
 alter table words add column if not exists pos text;
 alter table words add column if not exists example text;
 alter table words add column if not exists example_ko text;
+alter table words add column if not exists colloc text;
 
 -- 3. 워크시트 사진: 몇 쪽인지
 alter table submissions add column if not exists page text;

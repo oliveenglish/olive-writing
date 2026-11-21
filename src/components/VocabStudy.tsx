@@ -52,6 +52,7 @@ export default function VocabStudy({ words, onFinish }: { words: Word[]; onFinis
                 {w.word} <span aria-hidden style={{ fontSize: 16 }}>🔈</span>
               </button>
               <div className="small muted">{w.pos ? `${w.pos} · ` : ""}{w.meaning}</div>
+              {w.colloc && <div className="small en" style={{ color: "var(--navy)", fontWeight: 700 }}>+ {w.colloc}</div>}
               {w.example && (
                 <button type="button" className="exbtn en" onClick={() => say(w.example!)}>
                   {w.example} <span aria-hidden>🔈</span>

@@ -284,6 +284,10 @@ export async function applyImport(fd: FormData): Promise<{ ok: boolean; message:
     revalidatePath("/teacher/db");
     return { ok: true, message: `반영했어요. 단어 ${p.words.length}개 · 유닛 ${wordUnits.length}개` };
   }
+  if (!p.hasItems) {
+    revalidatePath("/teacher/db");
+    return { ok: true, message: `반영했어요. 유닛 ${p.units.length}개 · 단어 ${p.words.length}개 (문항은 그대로)` };
+  }
   // 엑셀에서 지운 카드 · 문항은 사이트에서도 지우기 (학습 기록은 그대로)
   const unitIds = p.units.map((u) => u.id);
   const { data: curItems } = await d.from("items").select("id").in("unit_id", unitIds);

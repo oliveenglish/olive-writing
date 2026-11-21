@@ -28,7 +28,7 @@ export default async function UnitPage({ params, searchParams }: { params: { id:
   const mode = MODES.find((m) => m === searchParams.do);
   if (mode) {
     const [{ data: words }, { data: cards }, { data: items }, { data: warm }] = await Promise.all([
-      db().from("words").select("word,pos,meaning,example,example_ko,ord").eq("unit_id", id).order("ord"),
+      db().from("words").select("word,pos,meaning,colloc,example,example_ko,ord").eq("unit_id", id).order("ord"),
       db().from("unit_cards").select("ord,title,body,audio_url,check_q,check_a,check_choices").eq("unit_id", id).order("ord"),
       mode === "practice" || mode === "test" ? db().from("items").select("*").eq("unit_id", id).eq("purpose", "연습").order("no") : Promise.resolve({ data: [] }),
       mode === "warmup" ? db().from("unit_checks").select("score,total").eq("student_id", me.id).eq("unit_id", id).eq("task", "warmup").maybeSingle() : Promise.resolve({ data: null }),
@@ -40,7 +40,7 @@ export default async function UnitPage({ params, searchParams }: { params: { id:
       <UnitActivity
         mode={mode}
         unit={{ id: unit.id, title: unit.title, stage: unit.stage, pass_score: unit.pass_score ?? 6 }}
-        words={(words ?? []).map((x) => ({ word: x.word, pos: x.pos, meaning: x.meaning, example: x.example, example_ko: x.example_ko }))}
+        words={(words ?? []).map((x) => ({ word: x.word, pos: x.pos, meaning: x.meaning, colloc: x.colloc, example: x.example, example_ko: x.example_ko }))}
         cards={cards ?? []}
         items={by}
         last={w?.total ? `${w.score} / ${w.total}` : null}

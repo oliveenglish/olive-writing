@@ -21,7 +21,7 @@ export default async function Units({ searchParams }: { searchParams: { stage?: 
   if (unit) {
     const [{ data: cards }, { data: words }, { data: items }] = await Promise.all([
       db().from("unit_cards").select("ord,title,body,check_q,check_a,check_choices,audio_url").eq("unit_id", unit.id).order("ord"),
-      db().from("words").select("ord,word,pos,meaning,example,example_ko").eq("unit_id", unit.id).order("ord"),
+      db().from("words").select("ord,word,pos,meaning,colloc,example,example_ko").eq("unit_id", unit.id).order("ord"),
       db().from("items").select("activity").eq("unit_id", unit.id),
     ]);
     const count = new Map<string, number>();
@@ -46,7 +46,7 @@ export default async function Units({ searchParams }: { searchParams: { stage?: 
                   <tr key={w.word}>
                     <td className="small muted">{k + 1}</td>
                     <td><b className="en">{w.word}</b> <span className="small muted">{w.pos}</span></td>
-                    <td>{w.meaning}</td>
+                    <td>{w.meaning}{w.colloc && <div className="small en muted">+ {w.colloc}</div>}</td>
                     <td className="small"><span className="en">{w.example}</span>{w.example_ko && <div className="muted">{w.example_ko}</div>}</td>
                   </tr>
                 ))}

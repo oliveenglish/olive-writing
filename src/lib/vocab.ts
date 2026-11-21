@@ -1,5 +1,5 @@
 /** 단어 학습 · Warming Up Test 공통 도구 (브라우저에서 써요) */
-export type Word = { word: string; pos: string | null; meaning: string | null; example: string | null; example_ko: string | null };
+export type Word = { word: string; pos: string | null; meaning: string | null; colloc?: string | null; example: string | null; example_ko: string | null };
 
 export function shuffle<T>(a: T[]): T[] {
   const b = [...a];

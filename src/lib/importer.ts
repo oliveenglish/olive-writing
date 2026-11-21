@@ -4,7 +4,7 @@ import { activityFromLabel } from "./grading";
 export type Parsed = {
   units: { id: string; stage: string; ord: number; title: string; scope: string | null; pass_score: number; status: string }[];
   cards: { unit_id: string; ord: number; title: string; body: string; audio_url: string | null; check_q: string | null; check_a: string | null; check_choices: string | null }[];
-  words: { unit_id: string; ord: number; grp: string | null; word: string; pos: string | null; meaning: string | null; example: string | null; example_ko: string | null }[];
+  words: { unit_id: string; ord: number; grp: string | null; word: string; pos: string | null; meaning: string | null; colloc: string | null; example: string | null; example_ko: string | null }[];
   items: {
     id: string;
     unit_id: string;
@@ -27,6 +27,8 @@ export type Parsed = {
   /** 막지는 않지만 알려 줄 것 (예: PREP 줄은 건너뜀) */
   notes: string[];
   wordsOnly: boolean;
+  /** 문항 시트가 있는 파일인지 (없으면 기존 문항은 그대로 둬요) */
+  hasItems: boolean;
 };
 
 type Row = Record<string, unknown>;
@@ -49,7 +51,7 @@ export const isPrep = (id: string) => /^P[-\s]?Unit/i.test(id.trim());
  * 중간에 쪼갠 유닛은 B-Unit 3-1, B-Unit 3-2처럼 써요. 형식이 다르면 맨 뒤로 (순서 칸 기준).
  */
 export function unitOrder(id: string, fallback = 0): number {
-  const m = id.replace(/\s+/g, "").match(/^(B|S(\d+))-?Unit(\d+)(?:[-.](\d+))?$/i);
+  const m = id.replace(/\(.*?\)/g, "").replace(/\s+/g, "").match(/^(B|S(\d+))-?Unit(\d+)(?:[-.](\d+))?$/i);
   if (!m) return 9_000_000 + fallback;
   const rank = m[1].toUpperCase() === "B" ? 1 : 1 + Number(m[2]);
   return rank * 100_000 + Number(m[3]) * 100 + Number(m[4] ?? 0);
@@ -67,11 +69,16 @@ export function parseWorkbook(buf: ArrayBuffer): Parsed {
   const problems: string[] = [];
   const notes: string[] = [];
   const skipped = new Set<string>();
-  // 단어(어휘) 시트만 있는 파일도 올릴 수 있어요 → 이미 사이트에 있는 유닛에 단어만 넣어요
-  const wordsOnly = !wb.Sheets["유닛"] && !wb.Sheets["문항"] && !!(wb.Sheets["단어"] || wb.Sheets["어휘"]);
-  if (!wordsOnly) for (const need of ["유닛", "문항"]) if (!wb.Sheets[need]) problems.push(`'${need}' 시트가 없어요.`);
+  // 유닛 시트: '유닛' 또는 '유닛별 주제' (어휘 · 예문 엑셀)
+  const unitSheet = ["유닛", "유닛별 주제"].find((n) => wb.Sheets[n]);
+  const wordSheets = ["단어", "어휘", "어휘 · 예문", "어휘·예문"].filter((n) => wb.Sheets[n]);
+  const hasItems = !!wb.Sheets["문항"];
+  // 단어 시트만 있는 파일도 올릴 수 있어요 → 이미 사이트에 있는 유닛에 단어만 넣어요
+  const wordsOnly = !unitSheet && !hasItems && wordSheets.length > 0;
+  if (!wordsOnly && !unitSheet) problems.push("'유닛' 시트(또는 '유닛별 주제' 시트)가 없어요.");
+  if (unitSheet && !hasItems) notes.push("문항 시트가 없어요. 유닛 · 단어만 넣고, 앱 문장 연습 · 확인 테스트 문제는 나중에 문항 엑셀을 올리면 들어가요.");
 
-  const units = sheet(wb, "유닛")
+  const units = sheet(wb, unitSheet ?? "유닛")
     .filter((r) => s(r["유닛 ID"]))
     .filter((r) => {
       if (!isPrep(s(r["유닛 ID"]))) return true;
@@ -84,8 +91,8 @@ export function parseWorkbook(buf: ArrayBuffer): Parsed {
         id: s(r["유닛 ID"]),
         stage: s(r["단계"]) || "기초 과정",
         ord: unitOrder(s(r["유닛 ID"]), n(r["순서"], i + 1)),
-        title: s(r["유닛 이름"]),
-        scope: s(r["범위"]) || null,
+        title: s(r["유닛 이름"]) || s(r["유닛 문법"]),
+        scope: s(r["범위"]) || [s(r["주제"]), s(r["목표 수준"])].filter(Boolean).join(" · ") || null,
         pass_score: pass ? Number(pass[1]) : 6,
         status: s(r["상태"]) === "준비 중" ? "draft" : "published",
       };
@@ -107,7 +114,7 @@ export function parseWorkbook(buf: ArrayBuffer): Parsed {
     }));
 
   // 유닛별 익힐 단어 20개: 유닛 · 순서 · 묶음 · 단어 · 품사 · 뜻 · 예문 · 예문 뜻 ('어휘' 시트 이름도 돼요)
-  const wordRows = [...sheet(wb, "단어"), ...sheet(wb, "어휘")];
+  const wordRows = wordSheets.flatMap((n) => sheet(wb, n));
   const words = wordRows
     .filter((r) => pick(r, ["유닛", "유닛 ID"]) && pick(r, ["단어", "표현", "단어 · 표현"]) && !isPrep(pick(r, ["유닛", "유닛 ID"])))
     .map((r, i) => ({
@@ -117,6 +124,7 @@ export function parseWorkbook(buf: ArrayBuffer): Parsed {
       word: pick(r, ["단어", "표현", "단어 · 표현"]),
       pos: pick(r, ["품사"]) || null,
       meaning: pick(r, ["뜻", "우리말 뜻", "한국어 뜻"]) || null,
+      colloc: pick(r, ["콜로케이션 · 덩어리", "콜로케이션", "덩어리"]) || null,
       example: pick(r, ["예문", "영어 예문"]) || null,
       example_ko: pick(r, ["예문 뜻", "예문 해석", "해석"]) || null,
     }));
@@ -198,5 +206,5 @@ export function parseWorkbook(buf: ArrayBuffer): Parsed {
 
   if (skipped.size) notes.push(`PREP 유닛 ${skipped.size}개는 건너뛰었어요 (이제 Basic부터 시작해요).`);
   if (wordsOnly) notes.push(`단어만 있는 파일이에요. 사이트에 이미 있는 유닛에 단어 ${words.length}개를 넣어요.`);
-  return { units, cards, words, items, codes, topics, problems, notes, wordsOnly };
+  return { units, cards, words, items, codes, topics, problems, notes, wordsOnly, hasItems };
 }

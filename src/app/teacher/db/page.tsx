@@ -21,7 +21,7 @@ export default async function DbPage() {
       </div>
       <DbUpload />
       <div className="card tint small" style={{ lineHeight: 1.8 }}>
-        <b>단어 시트 칸</b> (유닛마다 익힐 단어 20개): 유닛 · 순서 · 단어 · 품사 · 뜻 · 예문 · 예문 뜻 · (묶음)<br />
+        <b>어휘 · 예문 엑셀</b>을 그대로 올리면 돼요: &lsquo;유닛별 주제&rsquo; 시트 → 유닛, &lsquo;어휘 · 예문&rsquo; 시트 → 단어 (유닛 ID · 번호 · 단어 · 표현 · 품사 · 뜻 · 콜로케이션 · 예문 · 예문 뜻). 문항 시트가 없으면 문항은 그대로 둬요.<br />
         예문을 넣으면 학생이 앱 단어 학습에서 눌러서 들어요. 같은 유닛 단어를 다시 올리면 새 목록으로 바뀌어요.
       </div>
       <div className="tablebox">

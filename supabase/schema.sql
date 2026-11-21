@@ -65,6 +65,7 @@ create table if not exists words (
   word text not null,
   pos text,                                -- 품사 (n. v. adj. …)
   meaning text,
+  colloc text,                             -- 콜로케이션 · 덩어리
   example text,                            -- 예문 (눌러서 듣기)
   example_ko text,                         -- 예문 뜻
   primary key (unit_id, word)
@@ -73,6 +74,7 @@ alter table words add column if not exists ord int default 0;
 alter table words add column if not exists pos text;
 alter table words add column if not exists example text;
 alter table words add column if not exists example_ko text;
+alter table words add column if not exists colloc text;   -- 콜로케이션 · 덩어리 (my family)
 
 create table if not exists items (
   id text primary key,                     -- 유닛|활동|번호
