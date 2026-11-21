@@ -67,6 +67,7 @@ export default async function StudentDetail({ params }: { params: { id: string }
               </div>
               {!group && <span className="small" style={{ color: "var(--warnink)" }}>수업 반을 골라 주세요. (지금 요일은 두 반 중 어디에도 맞지 않아요)</span>}
             </fieldset>
+            <label className="field"><span>이 학생 Zoom 링크 (선택 · 비우면 반 링크)</span><input name="zoom" className="input" style={{ fontSize: 15 }} defaultValue={s.zoom_url ?? ""} placeholder="https://zoom.us/j/..." autoComplete="off" /></label>
             <label className="field"><span>이름</span><input name="name" className="input" defaultValue={s.name} /></label>
             <label className="field"><span>학년</span><input name="grade" className="input" defaultValue={s.grade ?? ""} /></label>
             <label className="field"><span>쌤 메모 (학생에게 안 보여요)</span><textarea name="memo" className="textarea" style={{ fontSize: 15 }} defaultValue={s.memo ?? ""} /></label>

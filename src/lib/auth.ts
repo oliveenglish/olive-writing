@@ -12,6 +12,7 @@ export type Profile = {
   memo: string | null;
   current_unit: string | null;
   class_days: number[] | null;
+  zoom_url: string | null;
   last_seen_at: string | null;
   created_at: string;
 };

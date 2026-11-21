@@ -6,6 +6,8 @@ import { stepStates, unitOf } from "@/lib/progress";
 import { allUnits } from "@/lib/content";
 import { STEPS, dayOf, groupLabel, groupOf, type StepState } from "@/lib/steps";
 import MakeStudent from "@/components/MakeStudent";
+import ZoomForm from "@/components/ZoomForm";
+import { db } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +29,7 @@ export default async function Progress() {
     })
   );
   const host = headers().get("host");
+  const { data: cls } = await db().from("classes").select("zoom_tt,zoom_mw").eq("teacher_id", me.id).order("created_at").limit(1).maybeSingle();
   return (
     <>
       <div>
@@ -62,6 +65,7 @@ export default async function Progress() {
         </table>
       </div>
       <div className="small muted">⑦ 다시 쓰기를 ✓ 확인하면 그 학생은 다음 유닛으로 넘어가요. 학생 이름을 누르면 유닛 · 수업 요일 · PIN을 바꿀 수 있어요.</div>
+      <ZoomForm tt={cls?.zoom_tt ?? null} mw={cls?.zoom_mw ?? null} />
       <MakeStudent units={allUnits().map((u) => ({ id: u.id, title: u.title, stage: u.stage }))} siteUrl={host ? `https://${host}` : undefined} />
     </>
   );

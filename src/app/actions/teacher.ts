@@ -4,6 +4,7 @@ import { requireTeacher, studentEmail, studentPassword } from "@/lib/auth";
 import { db, BUCKET } from "@/lib/supabase";
 import { firstUnit, getUnit, nextUnit } from "@/lib/content";
 import { GROUPS } from "@/lib/steps";
+import { cleanUrl } from "@/lib/zoom";
 
 /** 수업 반 → 요일 (화 · 목 = [2,4] / 월 · 수 = [1,3]) */
 const daysOfGroup = (fd: FormData) => GROUPS.find((g) => g.key === String(fd.get("group") || ""))?.days ?? null;
@@ -67,9 +68,34 @@ export async function saveStudent(studentId: string, fd: FormData) {
   if (days) patch.class_days = days;
   if (name) patch.name = name;
   if (unit) patch.current_unit = unit.id;
-  await db().from("profiles").update(patch).eq("id", studentId);
+  const zoom = cleanUrl(fd.get("zoom"));
+  if (zoom !== false) patch.zoom_url = zoom;
+  const { error } = await db().from("profiles").update(patch).eq("id", studentId);
+  if (error && "zoom_url" in patch) {
+    // Zoom 칸이 아직 DB에 없으면 (schema.sql 다시 실행 전) 나머지만 저장
+    delete patch.zoom_url;
+    await db().from("profiles").update(patch).eq("id", studentId);
+  }
   revalidatePath(`/teacher/students/${studentId}`);
   revalidatePath("/teacher");
+}
+
+/** 반별 Zoom 링크 저장 (쌤의 반 전체) */
+export async function saveZoom(_: { msg?: string } | undefined, fd: FormData): Promise<{ msg: string }> {
+  const me = await requireTeacher();
+  const tt = cleanUrl(fd.get("zoom_tt"));
+  const mw = cleanUrl(fd.get("zoom_mw"));
+  if (tt === false || mw === false) return { msg: "Zoom 링크는 https:// 로 시작하는 주소를 붙여 넣어 주세요." };
+  const { data: cls } = await db().from("classes").select("id").eq("teacher_id", me.id);
+  if (!cls?.length) {
+    const { error } = await db().from("classes").insert({ name: "내 학생", code: "OLIVE-" + Math.floor(1000 + Math.random() * 9000), teacher_id: me.id, zoom_tt: tt, zoom_mw: mw });
+    if (error) return { msg: "저장하지 못했어요: " + error.message + " (schema.sql을 다시 실행했는지 확인)" };
+  } else {
+    const { error } = await db().from("classes").update({ zoom_tt: tt, zoom_mw: mw }).eq("teacher_id", me.id);
+    if (error) return { msg: "저장하지 못했어요: " + error.message + " (schema.sql을 다시 실행했는지 확인)" };
+  }
+  revalidatePath("/teacher");
+  return { msg: "저장했어요. 학생 화면 수업 칸에 'Zoom 들어가기'가 떠요." };
 }
 
 export async function resetPin(studentId: string, fd: FormData) {

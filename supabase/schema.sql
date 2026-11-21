@@ -30,6 +30,11 @@ create table if not exists profiles (
 alter table profiles add column if not exists nickname text;
 alter table profiles add column if not exists current_unit text;          -- 지금 하는 유닛 (예: B-Unit 1)
 alter table profiles add column if not exists class_days int[] default '{}'; -- 수업 요일 (0 일 ~ 6 토) · 쌤이 보기용
+alter table profiles add column if not exists zoom_url text;              -- 이 학생만 다른 Zoom 링크 (1:1 등 · 비우면 반 링크)
+
+-- 반별 Zoom 링크 (화 · 목 반 / 월 · 수 반)
+alter table classes add column if not exists zoom_tt text;
+alter table classes add column if not exists zoom_mw text;
 
 -- 앱 활동 체크: 단어 학습 · 문장 연습 · 수업 참석
 --   w1-flash · w1-match · w1-word · w1-meaning (Set 1) / w2-… (Set 2)

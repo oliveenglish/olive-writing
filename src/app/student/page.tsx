@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { requireStudent } from "@/lib/auth";
 import { stepStates, unitOf } from "@/lib/progress";
-import { STEPS, WEEKDAY, groupLabel, groupOf, scheduleOf, type StepState } from "@/lib/steps";
+import { STEPS, WEEKDAY, dayOf, groupLabel, groupOf, scheduleOf, type StepState } from "@/lib/steps";
 import { todayKST } from "@/lib/dates";
 import { logout } from "@/app/actions/auth";
 import ClassToggle from "@/components/ClassToggle";
 import { ICamera, ICheck, IClass, IEye, IPhone } from "@/components/Icons";
+import { zoomFor } from "@/lib/zoom";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,8 @@ export default async function StudentHome() {
   const today = WEEKDAY[todayKST().getUTCDay()];
   const group = groupOf(me.class_days);
   const classText = group ? groupLabel(group) : null;
+  const zoom = await zoomFor(me);
+  const classToday = !!group && (dayOf(3, group) === today || dayOf(6, group) === today);
 
   const icon = (n: number) => {
     const t = STEPS[n - 1].type;
@@ -39,7 +42,10 @@ export default async function StudentHome() {
           <span className="nn">{s.note || (group === "mw" && (n === 1 || n === 2) ? `월요일 수업 전날 · ${step.sub}` : step.sub)}</span>
         </span>
         {step.type === "class" ? (
-          <ClassToggle unitId={unit.id} k={n === 3 ? "class1" : "class2"} done={s.status === "done"} />
+          <span className="row" style={{ gap: 6, flexWrap: "nowrap" }}>
+            {zoom && <a href={zoom} target="_blank" rel="noreferrer" className="go" style={{ textDecoration: "none", background: "#2D8CFF" }}>Zoom</a>}
+            <ClassToggle unitId={unit.id} k={n === 3 ? "class1" : "class2"} done={s.status === "done"} />
+          </span>
         ) : n === next && s.status !== "locked" ? (
           <span className="go">{s.status === "doing" ? "이어서" : "하기"}</span>
         ) : (
@@ -70,6 +76,11 @@ export default async function StudentHome() {
       </header>
 
       <main className="main">
+        {classToday && zoom && (
+          <a href={zoom} target="_blank" rel="noreferrer" className="btn block" style={{ background: "#2D8CFF", minHeight: 60, fontSize: 18 }}>
+            <IClass size={22} color="#fff" /> 오늘 수업 · Zoom 들어가기
+          </a>
+        )}
         <div style={{ fontSize: 16, fontWeight: 900, color: "var(--head)" }}>이번 주 할 일</div>
         {scheduleOf(group).map(({ day: d, steps }) => {
           const isToday = d === today;
