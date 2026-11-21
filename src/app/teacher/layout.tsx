@@ -11,7 +11,7 @@ export default async function TeacherLayout({ children }: { children: React.Reac
   return (
     <div className="tshell">
       <nav className="tnav noprint" aria-label="쌤 메뉴">
-        <div className="b">올리브 라이팅<small>{me.name} · 쌤 화면</small></div>
+        <div className="b">브릿지 라이팅<small>{me.name} · 쌤 화면</small></div>
         <TeacherNav pending={pending} />
         <form action={logout} style={{ marginTop: "auto" }}><button className="btn ghost sm" style={{ width: "100%" }}>로그아웃</button></form>
       </nav>

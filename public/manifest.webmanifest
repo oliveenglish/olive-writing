@@ -1,6 +1,6 @@
 {
-  "name": "올리브 라이팅",
-  "short_name": "올리브",
+  "name": "브릿지 라이팅",
+  "short_name": "브릿지 라이팅",
   "start_url": "/student",
   "display": "standalone",
   "background_color": "#F4F7FB",

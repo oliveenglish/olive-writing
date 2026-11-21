@@ -156,7 +156,7 @@ table.t td { padding: 11px 12px; border-top: 1px solid #e6e9df; vertical-align: 
 .login-side-in { max-width: 520px; }
 .login-kicker { font-size: 15px; font-weight: 800; letter-spacing: 3px; color: #e3edcb; margin-bottom: 14px; }
 .login-title { color: #fff; font-size: 54px; line-height: 1.08; font-weight: 900; letter-spacing: -1.5px; margin: 0; }
-.login-sub { font-size: 19px; line-height: 1.6; color: #eef3e0; margin: 22px 0 0; }
+.login-sub { word-break: keep-all; font-size: 19px; line-height: 1.6; color: #eef3e0; margin: 22px 0 0; }
 .login-main { background: var(--bg); display: flex; align-items: center; justify-content: center; padding: 40px 24px; }
 .login-box { width: 100%; max-width: 380px; text-align: center; }
 .login-h { font-size: 30px; font-weight: 900; color: var(--olive2); }

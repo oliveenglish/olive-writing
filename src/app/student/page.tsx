@@ -8,6 +8,7 @@ import { logout } from "@/app/actions/auth";
 import ClassToggle from "@/components/ClassToggle";
 import { ICamera, ICheck, IClass, IEye, IPhone } from "@/components/Icons";
 import { zoomFor } from "@/lib/zoom";
+import BridgeMark from "@/components/BridgeMark";
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +63,7 @@ export default async function StudentHome() {
     <div className="app wide">
       <header className="hero">
         <div className="row" style={{ justifyContent: "space-between" }}>
-          <span style={{ fontSize: 14, fontWeight: 700, color: "#e3edcb" }}>올리브 라이팅</span>
+          <span className="row" style={{ gap: 8, fontSize: 14, fontWeight: 800, color: "#e3edcb" }}><BridgeMark width={40} color="#e3edcb" post="#A9C46C" />브릿지 라이팅</span>
           <form action={logout} className="row" style={{ gap: 8 }}>
             <span style={{ fontSize: 13, fontWeight: 700, background: "rgba(255,255,255,0.16)", borderRadius: 999, padding: "4px 12px" }}>{me.nickname || me.name}</span>
             <button className="btn ghost sm" style={{ minHeight: 32, padding: "0 10px", fontSize: 12 }}>나가기</button>

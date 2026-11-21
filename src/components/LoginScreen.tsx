@@ -1,5 +1,6 @@
 import AuthForm from "@/components/AuthForm";
 import { loginAny } from "@/app/actions/auth";
+import BridgeMark from "@/components/BridgeMark";
 
 /** 접속 화면: 왼쪽 남색 소개 · 오른쪽 로그인 하나 (학생은 아이디 + PIN, 쌤은 이메일 + 비밀번호) */
 export default function LoginScreen() {
@@ -7,9 +8,11 @@ export default function LoginScreen() {
     <div className="login">
       <section className="login-side">
         <div className="login-side-in">
-          <div className="login-kicker">WRITING</div>
-          <h1 className="login-title">Olive<br />English Academy</h1>
-          <p className="login-sub">Write a little every day, get feedback from your teacher, and grow sentence by sentence.</p>
+          <div style={{ marginBottom: 14 }}><BridgeMark width={150} color="#fff" post="#A9C46C" /></div>
+          <div className="login-kicker">BRIDGE WRITING</div>
+          <h1 className="login-title">브릿지 라이팅</h1>
+          <p className="login-sub">문장 드릴부터 국제학교 에세이까지.<br />매일 조금씩 쓰고, 쌤 첨삭으로 한 문장씩 자라요.</p>
+          <div className="small" style={{ marginTop: 28, color: "#cfe0a6", fontWeight: 700 }}>올리브영어 아카데미</div>
         </div>
       </section>
       <section className="login-main">
