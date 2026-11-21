@@ -9,7 +9,7 @@ import CheckCard from "@/components/CheckCard";
 
 export const dynamic = "force-dynamic";
 
-export default async function ProofOne({ params }: { params: { id: string } }) {
+export default async function ProofOne({ params, searchParams }: { params: { id: string }; searchParams: { pen?: string } }) {
   await requireTeacher();
   const { data } = await db().from("proofs").select("*").eq("id", params.id).maybeSingle();
   const p = data as Proof | null;
@@ -23,11 +23,11 @@ export default async function ProofOne({ params }: { params: { id: string } }) {
         <div className="label">{kst(p.created_at).slice(0, 16).replace("T", " ")} 제출</div>
         <h1 className="title">{st?.name} · {p.unit_id} · {p.step === 5 ? "⑤ 쌤 숙제 첨삭" : p.step === 2 ? "② 워크북 단어 학습" : "⑦ 다시 쓰기"}</h1>
       </div>
-      {p.step === 5 && photo ? (
-        <MarkupForm proofId={p.id} photoUrl={photo} oldMarkup={markup} oldComment={p.comment} />
+      {(p.step === 5 || (p.step === 7 && searchParams.pen)) && photo ? (
+        <MarkupForm proofId={p.id} photoUrl={photo} oldMarkup={markup} oldComment={p.comment} redo={p.step === 7} />
       ) : (
         <div style={{ maxWidth: 520 }}>
-          <CheckCard c={{ id: p.id, student: st?.name ?? "", unit: p.unit_id, step: p.step, when: kst(p.created_at).slice(5, 16).replace("T", " "), photo, status: p.status, decision: p.decision, comment: p.comment }} />
+          <CheckCard c={{ id: p.id, student: st?.name ?? "", unit: p.unit_id, step: p.step, when: kst(p.created_at).slice(5, 16).replace("T", " "), photo, markup, status: p.status, decision: p.decision, comment: p.comment }} />
         </div>
       )}
     </>

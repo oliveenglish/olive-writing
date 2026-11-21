@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { correctProof } from "@/app/actions/teacher";
 
 /** ⑤ 사진 위에 바로 빨간 펜 첨삭 → 학생 화면에 원본 / 첨삭본 나란히 */
-export default function MarkupForm({ proofId, photoUrl, oldMarkup, oldComment }: { proofId: string; photoUrl: string; oldMarkup: string | null; oldComment: string | null }) {
+export default function MarkupForm({ proofId, photoUrl, oldMarkup, oldComment, redo = false }: { proofId: string; photoUrl: string; oldMarkup: string | null; oldComment: string | null; redo?: boolean }) {
   const router = useRouter();
   const canvas = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
@@ -92,8 +92,8 @@ export default function MarkupForm({ proofId, photoUrl, oldMarkup, oldComment }:
           <span>학생에게 한마디</span>
           <textarea className="textarea" style={{ fontSize: 15, minHeight: 140 }} value={comment} onChange={(e) => setComment(e.target.value)} placeholder="예: 주인공이 여러 명이면 are, 한 명이면 is예요. 두 문장만 고쳐서 다시 써 봐요!" />
         </label>
-        <div className="small muted">보내면 학생 ⑦ 칸이 열리고, 첨삭을 보고 워크북에 다시 써서 올려요.</div>
-        <button className="btn" disabled={busy} onClick={send}>{busy ? "보내는 중…" : "학생에게 보내기"}</button>
+        <div className="small muted">{redo ? "보내면 학생에게 '빨간 펜 첨삭 · 다시 써 와요' 알림이 가고, 첨삭을 보고 ⑦을 한 번 더 써서 올려요." : "보내면 학생 ⑦ 칸이 열리고, 첨삭을 보고 워크북에 다시 써서 올려요."}</div>
+        <button className="btn" disabled={busy} onClick={send}>{busy ? "보내는 중…" : redo ? "첨삭 보내기 · 다시 써 와요" : "학생에게 보내기"}</button>
       </aside>
     </div>
   );

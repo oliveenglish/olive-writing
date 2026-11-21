@@ -88,7 +88,7 @@ export async function unseenFeedback(studentId: string): Promise<Proof[]> {
 
 /** 알림 문구 */
 export function feedbackText(p: Proof): { title: string; tone: "ok" | "redo" | "red" } {
-  if (p.decision === "redo") return { title: "다시 써 와요", tone: "redo" };
+  if (p.decision === "redo") return p.markup_path ? { title: "빨간 펜 첨삭 · 다시 써 와요", tone: "red" } : { title: "다시 써 와요", tone: "redo" };
   if (p.decision === "corrected") return { title: "빨간 펜 첨삭이 왔어요", tone: "red" };
   return { title: p.step === 7 ? "잘했어요! 다음 유닛이 열렸어요" : "잘했어요! 쌤이 확인했어요", tone: "ok" };
 }

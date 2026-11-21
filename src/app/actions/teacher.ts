@@ -132,7 +132,7 @@ export async function checkProof(proofId: string, decision: "ok" | "redo", comme
   revalidatePath("/teacher/proofs");
 }
 
-/** ⑤ 빨간 펜 첨삭 보내기 (사진 위 그림 + 한마디) */
+/** 빨간 펜 첨삭 보내기 (사진 위 그림 + 한마디) — ⑤는 첨삭 완료, ⑦은 첨삭하고 다시 써 와요 */
 export async function correctProof(proofId: string, fd: FormData) {
   await requireTeacher();
   const { data: p } = await db().from("proofs").select("*").eq("id", proofId).maybeSingle();
@@ -145,7 +145,7 @@ export async function correctProof(proofId: string, fd: FormData) {
   }
   await db()
     .from("proofs")
-    .update({ status: "returned", decision: "corrected", markup_path, comment: String(fd.get("comment") || "").trim() || null, seen: false, returned_at: new Date().toISOString() })
+    .update({ status: "returned", decision: p.step === 5 ? "corrected" : "redo", markup_path, comment: String(fd.get("comment") || "").trim() || null, seen: false, returned_at: new Date().toISOString() })
     .eq("id", proofId);
   revalidatePath("/teacher/proofs");
   revalidatePath("/teacher");

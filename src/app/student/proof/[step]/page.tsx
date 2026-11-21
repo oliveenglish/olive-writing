@@ -25,7 +25,7 @@ export default async function ProofPage({ params }: { params: { step: string } }
   const proofs = await latestProofs(me.id, unit.id);
   const mine = proofs.get(step);
   const p5 = proofs.get(5);
-  const [myPhoto, p5Photo, p5Markup] = await Promise.all([signedUrl(mine?.photo_path), step === 7 ? signedUrl(p5?.photo_path) : null, step === 7 ? signedUrl(p5?.markup_path) : null]);
+  const [myPhoto, myMarkup, p5Photo, p5Markup] = await Promise.all([signedUrl(mine?.photo_path), step === 7 ? signedUrl(mine?.markup_path) : null, step === 7 ? signedUrl(p5?.photo_path) : null, step === 7 ? signedUrl(p5?.markup_path) : null]);
   // 첨삭 · 확인 결과를 봤으면 '봤어요'
   if (step === 7 && p5?.status === "returned" && !p5.seen) await db().from("proofs").update({ seen: true }).eq("id", p5.id);
   if (mine?.status === "returned" && !mine.seen) await db().from("proofs").update({ seen: true }).eq("id", mine.id);
@@ -80,10 +80,10 @@ export default async function ProofPage({ params }: { params: { step: string } }
             <div className="row" style={{ justifyContent: "space-between" }}>
               <b>내가 올린 사진</b>
               <span className={`chip ${mine.decision === "redo" ? "warn" : mine.status === "submitted" ? "gray" : ""}`}>
-                {mine.status === "submitted" ? (step === 5 ? "쌤이 첨삭 중" : "쌤 확인 중") : mine.decision === "redo" ? "다시 써 와요" : step === 5 ? "첨삭 완료" : "쌤 확인 ✓"}
+                {mine.status === "submitted" ? (step === 5 ? "쌤이 첨삭 중" : "쌤 확인 중") : mine.decision === "redo" ? (myMarkup ? "빨간 펜 첨삭 · 다시 써 와요" : "다시 써 와요") : step === 5 ? "첨삭 완료" : "쌤 확인 ✓"}
               </span>
             </div>
-            {myPhoto && mine && <Link href={`/view/${mine.id}`} className="photo" style={{ maxWidth: 260 }}><img src={myPhoto} alt="올린 사진" /></Link>}
+            {myPhoto && mine && <Link href={`/view/${mine.id}`} className="photo" style={{ maxWidth: myMarkup ? 420 : 260, ...(myMarkup ? { border: "2px solid var(--red)" } : {}) }}><img src={myPhoto} alt="올린 사진" />{myMarkup && <img className="overlay" src={myMarkup} alt="쌤 첨삭" />}</Link>}
             {mine.comment && step !== 5 && <div className="bubble no" style={mine.decision === "redo" ? undefined : { background: "var(--tint)", color: "var(--olive2)" }}>쌤: {mine.comment}</div>}
             {step === 5 && mine.status === "returned" && <Link href="/student/proof/7" className="btn block">⑦ 첨삭 보러 가기</Link>}
           </section>

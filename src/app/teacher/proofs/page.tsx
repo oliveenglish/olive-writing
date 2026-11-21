@@ -37,6 +37,7 @@ export default async function Proofs({ searchParams }: { searchParams: { done?: 
         step: p.step,
         when: kst(done ? p.returned_at : p.created_at).slice(5, 16).replace("T", " "),
         photo: await signedUrl(p.photo_path),
+        markup: p.step === 7 ? await signedUrl(p.markup_path) : null,
         status: p.status,
         decision: p.decision,
         comment: p.comment,

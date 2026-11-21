@@ -16,6 +16,8 @@ export type ProofCard = {
   comment: string | null;
   /** ⑦이면 ⑤ 첨삭본을 옆에 */
   before?: { id: string; photo: string | null; markup: string | null } | null;
+  /** 이 사진에 쌤이 그린 첨삭 */
+  markup?: string | null;
 };
 
 const STEP_NAME: Record<number, string> = { 2: "② 워크북 단어 학습", 5: "⑤ 쌤 숙제", 7: "⑦ 다시 쓰기" };
@@ -42,7 +44,7 @@ export default function CheckCard({ c }: { c: ProofCard }) {
       <div className="row" style={{ gap: 6 }}>
         <span className="chip">{c.unit}</span>
         <span className="chip gray">{STEP_NAME[c.step]}</span>
-        {returned && <span className={`chip ${c.decision === "redo" ? "red" : ""}`}>{c.decision === "redo" ? "↺ 다시 써 와요" : c.decision === "corrected" ? "첨삭함" : "✓ 확인"}</span>}
+        {returned && <span className={`chip ${c.decision === "redo" ? "red" : ""}`}>{c.decision === "redo" ? (c.step === 7 && c.markup ? "🖍️ 첨삭 · 다시 써 와요" : "↺ 다시 써 와요") : c.decision === "corrected" ? "첨삭함" : "✓ 확인"}</span>}
       </div>
       {c.before ? (
         <div className="side2" style={{ gap: 8 }}>
@@ -57,7 +59,7 @@ export default function CheckCard({ c }: { c: ProofCard }) {
           </div>
           <div className="col" style={{ gap: 4 }}>
             <span className="small muted" style={{ fontWeight: 800 }}>⑦ 다시 쓴 글</span>
-            {c.photo && <a href={c.photo} target="_blank" rel="noreferrer" className="photo"><img src={c.photo} alt="⑦ 다시 쓴 글" /></a>}
+            {c.photo && <Link href={`/view/${c.id}`} className="photo"><img src={c.photo} alt="⑦ 다시 쓴 글" />{c.markup && <img className="overlay" src={c.markup} alt="" />}</Link>}
           </div>
         </div>
       ) : (
@@ -74,6 +76,7 @@ export default function CheckCard({ c }: { c: ProofCard }) {
             <button type="button" className="btn sm" disabled={pending} onClick={() => act("ok")}>✓ 확인{c.step === 7 ? " · 다음 유닛" : ""}</button>
             <button type="button" className="btn ghost sm" disabled={pending} onClick={() => act("redo")}>↺ 다시 써 와요</button>
           </div>
+          {c.step === 7 && <Link href={`/teacher/proofs/${c.id}?pen=1`} className="btn red sm">🖍️ 빨간 펜으로 첨삭하고 다시 써 와요</Link>}
         </>
       )}
     </div>
