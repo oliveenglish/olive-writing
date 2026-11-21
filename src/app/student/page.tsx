@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireStudent } from "@/lib/auth";
 import { stepStates, unitOf } from "@/lib/progress";
-import { DAYS, STEPS, WEEKDAY, type StepState } from "@/lib/steps";
+import { STEPS, WEEKDAY, groupLabel, groupOf, scheduleOf, type StepState } from "@/lib/steps";
 import { todayKST } from "@/lib/dates";
 import { logout } from "@/app/actions/auth";
 import ClassToggle from "@/components/ClassToggle";
@@ -19,7 +19,8 @@ export default async function StudentHome() {
   const done = states.filter((s) => s.status === "done").length;
   const next = states.find((s) => s.status !== "done" && s.status !== "wait" && s.status !== "locked")?.n;
   const today = WEEKDAY[todayKST().getUTCDay()];
-  const classText = (me.class_days ?? []).length ? `${(me.class_days ?? []).map((d) => WEEKDAY[d]).join(" · ")} 수업` : null;
+  const group = groupOf(me.class_days);
+  const classText = group ? groupLabel(group) : null;
 
   const icon = (n: number) => {
     const t = STEPS[n - 1].type;
@@ -35,7 +36,7 @@ export default async function StudentHome() {
         <span className="num">{s.status === "done" ? <ICheck /> : n}</span>
         <span style={{ flex: 1, minWidth: 0 }}>
           <span className="tt">{step.title}</span>
-          <span className="nn">{s.note || step.sub}</span>
+          <span className="nn">{s.note || (group === "mw" && (n === 1 || n === 2) ? `월요일 수업 전에 · ${step.sub}` : step.sub)}</span>
         </span>
         {step.type === "class" ? (
           <ClassToggle unitId={unit.id} k={n === 3 ? "class1" : "class2"} done={s.status === "done"} />
@@ -70,9 +71,15 @@ export default async function StudentHome() {
 
       <main className="main">
         <div style={{ fontSize: 16, fontWeight: 900, color: "var(--head)" }}>이번 주 할 일</div>
-        {DAYS.map((d) => {
-          const steps = STEPS.filter((s) => s.day === d).map((s) => s.n);
+        {scheduleOf(group).map(({ day: d, steps }) => {
           const isToday = d === today;
+          if (!steps.length)
+            return (
+              <div key={d} className="day">
+                <div className="dayname" style={isToday ? { color: "var(--head)" } : undefined}>{d}{isToday && <span className="today">오늘</span>}</div>
+                <div className="daybox"><div className="step" style={{ background: "transparent", color: "var(--muted)", fontSize: 13 }}>밀린 것 하기 · 쉬어 가기</div></div>
+              </div>
+            );
           return (
             <div key={d} className="day">
               <div className="dayname" style={isToday ? { color: "var(--head)" } : undefined}>

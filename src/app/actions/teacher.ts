@@ -3,6 +3,10 @@ import { revalidatePath } from "next/cache";
 import { requireTeacher, studentEmail, studentPassword } from "@/lib/auth";
 import { db, BUCKET } from "@/lib/supabase";
 import { firstUnit, getUnit, nextUnit } from "@/lib/content";
+import { GROUPS } from "@/lib/steps";
+
+/** 수업 반 → 요일 (화 · 목 = [2,4] / 월 · 수 = [1,3]) */
+const daysOfGroup = (fd: FormData) => GROUPS.find((g) => g.key === String(fd.get("group") || ""))?.days ?? null;
 
 /* ───── 학생 ───── */
 export type MakeStudentState = { error?: string; made?: { name: string; username: string; pin: string } } | undefined;
@@ -15,7 +19,7 @@ export async function makeStudent(_: MakeStudentState, fd: FormData): Promise<Ma
   const username = String(fd.get("username") || "").trim().toLowerCase();
   const pin = String(fd.get("pin") || "").trim();
   const unit = String(fd.get("unit") || "");
-  const days = fd.getAll("day").map(Number).filter((d) => Number.isInteger(d) && d >= 0 && d <= 6);
+  const days = daysOfGroup(fd) ?? [2, 4];
   if (!name || !username || !pin) return { error: "이름 · 아이디 · PIN을 채워 주세요." };
   if (!/^[a-z0-9_]{3,20}$/.test(username)) return { error: "아이디는 영어 소문자 · 숫자 3~20자로 만들어요. (예: minji01)" };
   if (!/^\d{4}$/.test(pin)) return { error: "PIN은 숫자 4자리예요." };
@@ -40,7 +44,7 @@ export async function makeStudent(_: MakeStudentState, fd: FormData): Promise<Ma
     username,
     class_id: classId,
     current_unit: getUnit(unit)?.id ?? null,
-    class_days: Array.from(new Set(days)).sort((a, b) => a - b),
+    class_days: days,
   });
   if (e2) {
     await db().auth.admin.deleteUser(created.user.id);
@@ -55,12 +59,12 @@ export async function saveStudent(studentId: string, fd: FormData) {
   await requireTeacher();
   const name = String(fd.get("name") || "").trim();
   const unit = getUnit(String(fd.get("unit") || ""));
-  const days = fd.getAll("day").map(Number).filter((d) => Number.isInteger(d) && d >= 0 && d <= 6);
+  const days = daysOfGroup(fd);
   const patch: Record<string, unknown> = {
     grade: String(fd.get("grade") || "").trim() || null,
     memo: String(fd.get("memo") || ""),
-    class_days: Array.from(new Set(days)).sort((a, b) => a - b),
   };
+  if (days) patch.class_days = days;
   if (name) patch.name = name;
   if (unit) patch.current_unit = unit.id;
   await db().from("profiles").update(patch).eq("id", studentId);

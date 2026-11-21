@@ -1,6 +1,6 @@
 /**
- * 이번 주 할 일 7단계 (모든 학생 같아요 · 수업 요일만 학생마다 달라요)
- * 월 ①② · 화 ③ · 수 ④⑤ · 목 ⑥ · 금 ⑦
+ * 이번 주 할 일 7단계 (순서는 모든 학생 같아요)
+ * 수업 반은 두 가지: 화 · 목 반 / 월 · 수 반 → 반에 따라 요일이 정해져요 (scheduleOf)
  */
 export type StepType = "app" | "proof" | "class";
 export type Step = { n: 1 | 2 | 3 | 4 | 5 | 6 | 7; day: string; type: StepType; title: string; sub: string };
@@ -16,6 +16,31 @@ export const STEPS: Step[] = [
 ];
 export const DAYS = ["월", "화", "수", "목", "금"];
 export const WEEKDAY = ["일", "월", "화", "수", "목", "금", "토"];
+
+/** 수업 반: 화 · 목 반 (tt) / 월 · 수 반 (mw) */
+export type Group = "tt" | "mw";
+export const GROUPS: { key: Group; label: string; days: number[] }[] = [
+  { key: "tt", label: "화 · 목 반", days: [2, 4] },
+  { key: "mw", label: "월 · 수 반", days: [1, 3] },
+];
+/** 학생 수업 요일 → 반 (둘 다 아니면 null = 쌤이 다시 정해야 해요) */
+export function groupOf(days: number[] | null | undefined): Group | null {
+  const d = [...(days ?? [])].sort((a, b) => a - b).join(",");
+  return d === "2,4" ? "tt" : d === "1,3" ? "mw" : null;
+}
+/**
+ * 반마다 단계별 요일 (수업은 저녁이라 월 · 수 반은 월요일 수업 전에 ①②)
+ *   화 · 목 반: 월 ①② · 화 ③ 수업 · 수 ④⑤ · 목 ⑥ 수업 · 금 ⑦
+ *   월 · 수 반: 월 ①② → ③ 수업 · 화 ④⑤ · 수 ⑥ 수업 · 목 ⑦ · 금 밀린 것
+ */
+const SCHEDULE: Record<Group, Record<number, string>> = {
+  tt: { 1: "월", 2: "월", 3: "화", 4: "수", 5: "수", 6: "목", 7: "금" },
+  mw: { 1: "월", 2: "월", 3: "월", 4: "화", 5: "화", 6: "수", 7: "목" },
+};
+export const dayOf = (n: number, g: Group | null) => SCHEDULE[g ?? "tt"][n];
+/** 요일별 단계 번호 (월~금, 빈 날은 []) */
+export const scheduleOf = (g: Group | null) => DAYS.map((d) => ({ day: d, steps: STEPS.filter((s) => dayOf(s.n, g) === d).map((s) => s.n) }));
+export const groupLabel = (g: Group | null) => GROUPS.find((x) => x.key === g)?.label ?? "수업 반 미정";
 
 export const WORD_ACTS = [
   { key: "flash", label: "① 플래시 카드" },

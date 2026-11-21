@@ -3,7 +3,10 @@ import { useFormState, useFormStatus } from "react-dom";
 import { makeStudent, type MakeStudentState } from "@/app/actions/teacher";
 
 type Unit = { id: string; title: string; stage: string };
-const DAYS: [number, string][] = [[1, "월"], [2, "화"], [3, "수"], [4, "목"], [5, "금"], [6, "토"], [0, "일"]];
+const GROUPS = [
+  { key: "tt", label: "화 · 목 반" },
+  { key: "mw", label: "월 · 수 반" },
+];
 
 function Submit() {
   const { pending } = useFormStatus();
@@ -36,10 +39,10 @@ export default function MakeStudent({ units, siteUrl }: { units: Unit[]; siteUrl
             </select>
           </label>
           <fieldset className="field" style={{ border: "none", padding: 0, margin: 0 }}>
-            <span style={{ fontSize: 14, fontWeight: 700, color: "var(--head)" }}>수업 요일 (선택)</span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: "var(--head)" }}>수업 반</span>
             <div className="row" style={{ gap: 6 }}>
-              {DAYS.map(([d, n]) => (
-                <label key={d} className="chip gray" style={{ cursor: "pointer", gap: 4, padding: "8px 10px" }}><input type="checkbox" name="day" value={d} /> {n}</label>
+              {GROUPS.map((g, k) => (
+                <label key={g.key} className="chip gray" style={{ cursor: "pointer", gap: 6, padding: "10px 14px", fontSize: 14 }}><input type="radio" name="group" value={g.key} defaultChecked={k === 0} /> {g.label}</label>
               ))}
             </div>
           </fieldset>

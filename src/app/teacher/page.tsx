@@ -4,7 +4,7 @@ import { requireTeacher } from "@/lib/auth";
 import { myStudents } from "@/lib/teacher";
 import { stepStates, unitOf } from "@/lib/progress";
 import { allUnits } from "@/lib/content";
-import { STEPS, WEEKDAY, type StepState } from "@/lib/steps";
+import { STEPS, dayOf, groupLabel, groupOf, type StepState } from "@/lib/steps";
 import MakeStudent from "@/components/MakeStudent";
 
 export const dynamic = "force-dynamic";
@@ -47,10 +47,14 @@ export default async function Progress() {
               <tr key={s.id}>
                 <td>
                   <Link href={`/teacher/students/${s.id}`} style={{ fontWeight: 800, textDecoration: "none" }}>{s.name}</Link>
-                  <div className="small muted">{(s.class_days ?? []).length ? `${(s.class_days ?? []).map((d) => WEEKDAY[d]).join(" · ")} 수업` : "수업 요일 —"}</div>
+                  {groupOf(s.class_days) ? (
+                    <div className="small muted">{groupLabel(groupOf(s.class_days))}</div>
+                  ) : (
+                    <div className="small" style={{ color: "var(--warnink)", fontWeight: 700 }}>수업 반을 정해 주세요</div>
+                  )}
                 </td>
                 <td>{unit.id}<div className="small muted">{unit.title}</div></td>
-                {states.map((x) => <td key={x.n}><Cell s={x} /></td>)}
+                {states.map((x) => <td key={x.n}><Cell s={x} /><div className="small muted">{dayOf(x.n, groupOf(s.class_days))}</div></td>)}
               </tr>
             ))}
             {!rows.length && <tr><td colSpan={9} className="muted">아직 학생이 없어요. 아래에서 아이디와 PIN을 만들어 주세요.</td></tr>}

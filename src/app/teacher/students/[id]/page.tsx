@@ -4,12 +4,11 @@ import { requireTeacher, type Profile } from "@/lib/auth";
 import { db } from "@/lib/supabase";
 import { stepStates, unitOf } from "@/lib/progress";
 import { allUnits } from "@/lib/content";
-import { STEPS, WEEKDAY } from "@/lib/steps";
+import { GROUPS, STEPS, dayOf, groupOf } from "@/lib/steps";
 import { kst } from "@/lib/dates";
 import { resetPin, saveStudent } from "@/app/actions/teacher";
 
 export const dynamic = "force-dynamic";
-const DAYS = [1, 2, 3, 4, 5, 6, 0];
 
 export default async function StudentDetail({ params }: { params: { id: string } }) {
   await requireTeacher();
@@ -19,6 +18,7 @@ export default async function StudentDetail({ params }: { params: { id: string }
   const unit = unitOf(s);
   const states = await stepStates(s.id, unit.id);
   const units = allUnits();
+  const group = groupOf(s.class_days);
   const stages = Array.from(new Set(units.map((u) => u.stage)));
   return (
     <>
@@ -35,7 +35,7 @@ export default async function StudentDetail({ params }: { params: { id: string }
                 const x = states[st.n - 1];
                 return (
                   <tr key={st.n}>
-                    <td style={{ width: 36 }}><b>{st.day}</b></td>
+                    <td style={{ width: 36 }}><b>{dayOf(st.n, group)}</b></td>
                     <td>{["", "①", "②", "③", "④", "⑤", "⑥", "⑦"][st.n]} {st.title}</td>
                     <td className="small">{x.status === "done" ? <span className="ok">✓ {x.note}</span> : x.note || "—"}</td>
                   </tr>
@@ -57,14 +57,15 @@ export default async function StudentDetail({ params }: { params: { id: string }
               </select>
             </label>
             <fieldset className="field" style={{ border: "none", padding: 0, margin: 0 }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--head)" }}>수업 요일</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--head)" }}>수업 반</span>
               <div className="row" style={{ gap: 6 }}>
-                {DAYS.map((d) => (
-                  <label key={d} className="chip gray" style={{ cursor: "pointer", gap: 4, padding: "8px 10px" }}>
-                    <input type="checkbox" name="day" value={d} defaultChecked={(s.class_days ?? []).includes(d)} /> {WEEKDAY[d]}
+                {GROUPS.map((g) => (
+                  <label key={g.key} className="chip gray" style={{ cursor: "pointer", gap: 6, padding: "10px 14px", fontSize: 14 }}>
+                    <input type="radio" name="group" value={g.key} defaultChecked={group === g.key} required /> {g.label}
                   </label>
                 ))}
               </div>
+              {!group && <span className="small" style={{ color: "var(--warnink)" }}>수업 반을 골라 주세요. (지금 요일은 두 반 중 어디에도 맞지 않아요)</span>}
             </fieldset>
             <label className="field"><span>이름</span><input name="name" className="input" defaultValue={s.name} /></label>
             <label className="field"><span>학년</span><input name="grade" className="input" defaultValue={s.grade ?? ""} /></label>
