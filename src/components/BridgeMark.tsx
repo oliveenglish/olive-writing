@@ -1,4 +1,4 @@
-/** 브릿지 라이팅 다리 모양 (로고) */
+/** 올리브 브릿지 라이팅 다리 모양 (로고) */
 export default function BridgeMark({ width = 120, color = "#4C6B1F", post = "#A9C46C" }: { width?: number; color?: string; post?: string }) {
   return (
     <svg width={width} height={(width * 40) / 250} viewBox="0 0 250 40" aria-hidden="true" style={{ display: "block" }}>
