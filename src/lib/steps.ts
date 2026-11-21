@@ -64,4 +64,6 @@ export type StepState = {
   n: number;
   status: "done" | "wait" | "again" | "todo" | "doing" | "locked" | "new";
   note: string;
+  /** 쌤 확인 · 첨삭이 왔는데 아직 안 봄 */
+  fresh?: boolean;
 };

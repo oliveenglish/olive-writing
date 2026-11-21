@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireStudent } from "@/lib/auth";
-import { stepStates, unitOf } from "@/lib/progress";
+import { feedbackText, stepStates, unitOf, unseenFeedback } from "@/lib/progress";
+import { getUnit } from "@/lib/content";
 import { STEPS, WEEKDAY, dayOf, groupLabel, groupOf, scheduleOf, type StepState } from "@/lib/steps";
 import { todayKST } from "@/lib/dates";
 import { logout } from "@/app/actions/auth";
@@ -22,7 +23,7 @@ export default async function StudentHome() {
   const today = WEEKDAY[todayKST().getUTCDay()];
   const group = groupOf(me.class_days);
   const classText = group ? groupLabel(group) : null;
-  const zoom = await zoomFor(me);
+  const [zoom, fresh] = await Promise.all([zoomFor(me), unseenFeedback(me.id)]);
   const classToday = !!group && (dayOf(3, group) === today || dayOf(6, group) === today);
 
   const icon = (n: number) => {
@@ -38,7 +39,7 @@ export default async function StudentHome() {
       <>
         <span className="num">{s.status === "done" ? <ICheck /> : n}</span>
         <span style={{ flex: 1, minWidth: 0 }}>
-          <span className="tt">{step.title}</span>
+          <span className="tt">{step.title}{s.fresh && <span className="newdot">NEW</span>}</span>
           <span className="nn">{s.note || (group === "mw" && (n === 1 || n === 2) ? `월요일 수업 전날 · ${step.sub}` : step.sub)}</span>
         </span>
         {step.type === "class" ? (
@@ -76,6 +77,25 @@ export default async function StudentHome() {
       </header>
 
       <main className="main">
+        {fresh.length > 0 && (
+          <section className="notice">
+            <div className="row" style={{ gap: 8, fontWeight: 900, color: "var(--head)" }}>
+              <span className="bell">🔔</span> 쌤 피드백 {fresh.length}개 도착
+            </div>
+            {fresh.map((p) => {
+              const t = feedbackText(p);
+              return (
+                <Link key={p.id} href={`/student/feedback/${p.id}`} className={`fb ${t.tone}`}>
+                  <span style={{ flex: 1, minWidth: 0 }}>
+                    <span className="tt">{t.title}</span>
+                    <span className="nn">{(getUnit(p.unit_id)?.id ?? p.unit_id)} · {STEPS[p.step - 1].title}{p.comment ? ` · 쌤: ${p.comment}` : ""}</span>
+                  </span>
+                  <span className="go">보기</span>
+                </Link>
+              );
+            })}
+          </section>
+        )}
         {classToday && zoom && (
           <a href={zoom} target="_blank" rel="noreferrer" className="btn block" style={{ background: "#2D8CFF", minHeight: 60, fontSize: 18 }}>
             <IClass size={22} color="#fff" /> 오늘 수업 · Zoom 들어가기

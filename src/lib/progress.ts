@@ -56,8 +56,9 @@ export async function stepStates(studentId: string, unitId: string): Promise<Ste
     const p = proofs.get(n);
     if (!p) return { n, status: "todo", note: "" };
     if (p.status === "submitted") return { n, status: "wait", note: n === 5 ? "쌤이 첨삭 중" : "쌤 확인 중" };
-    if (p.decision === "redo") return { n, status: "again", note: "다시 써서 올려요" };
-    return { n, status: "done", note: n === 5 ? "첨삭 완료" : "쌤 확인 ✓" };
+    const fresh = !p.seen;
+    if (p.decision === "redo") return { n, status: "again", note: "다시 써서 올려요", fresh };
+    return { n, status: "done", note: n === 5 ? "첨삭 완료" : "쌤 확인 ✓", fresh };
   };
   const cls = (n: number, key: string): StepState => (checks.has(key) ? { n, status: "done", note: "참석" } : { n, status: "todo", note: "" });
 
@@ -77,6 +78,19 @@ export async function stepStates(studentId: string, unitId: string): Promise<Ste
     cls(6, "class2"),
     step7,
   ];
+}
+
+/** 쌤이 확인 · 첨삭했는데 학생이 아직 안 본 것 (지난 유닛 것도 포함) */
+export async function unseenFeedback(studentId: string): Promise<Proof[]> {
+  const { data } = await db().from("proofs").select("*").eq("student_id", studentId).eq("status", "returned").eq("seen", false).order("returned_at", { ascending: false });
+  return (data as Proof[]) ?? [];
+}
+
+/** 알림 문구 */
+export function feedbackText(p: Proof): { title: string; tone: "ok" | "redo" | "red" } {
+  if (p.decision === "redo") return { title: "다시 써 와요", tone: "redo" };
+  if (p.decision === "corrected") return { title: "빨간 펜 첨삭이 왔어요", tone: "red" };
+  return { title: p.step === 7 ? "잘했어요! 다음 유닛이 열렸어요" : "잘했어요! 쌤이 확인했어요", tone: "ok" };
 }
 
 export async function signedUrl(path: string | null | undefined): Promise<string | null> {
