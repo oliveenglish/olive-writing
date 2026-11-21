@@ -1,10 +1,17 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
 
+const TITLE = "브릿지 라이팅";
+const DESC = "문장 드릴부터 국제학교 에세이까지";
+
 export const metadata: Metadata = {
-  title: "올리브 라이팅",
-  description: "단어 → 문장 → 글쓰기, 매주 한 유닛씩",
+  metadataBase: new URL("https://olive-writing.vercel.app"),
+  title: TITLE,
+  description: DESC,
   manifest: "/manifest.webmanifest",
+  // 카톡 · 문자 링크 미리보기 (이미지는 public/og.png, 1200×630)
+  openGraph: { type: "website", url: "/", siteName: TITLE, title: TITLE, description: DESC, images: [{ url: "/og.png", width: 1200, height: 630, alt: TITLE }], locale: "ko_KR" },
+  twitter: { card: "summary_large_image", title: TITLE, description: DESC, images: ["/og.png"] },
 };
 export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#4C6B1F" };
 
