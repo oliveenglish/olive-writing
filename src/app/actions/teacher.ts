@@ -88,13 +88,17 @@ export async function setStartUnit(studentId: string, fd: FormData) {
       await db().from("unit_progress").update({ passed: false, skipped: false, step: 0 }).eq("student_id", studentId).eq("unit_id", u.id);
     }
   }
-  // 앞 단계의 최종 점검도 건너뛰기 처리
-  const stages = Array.from(new Set(units.filter((u) => u.ord < t.ord && u.stage !== t.stage).map((u) => u.stage)));
-  for (const st of stages) {
-    const { data: fc } = await db().from("final_checks").select("id").eq("student_id", studentId).eq("stage", st).eq("status", "passed").limit(1);
-    if (!fc?.length) await db().from("final_checks").insert({ student_id: studentId, stage: st, status: "passed" });
-  }
   await db().from("profiles").update({ start_unit: target }).eq("id", studentId);
+  revalidatePath(`/teacher/students/${studentId}`);
+}
+
+/** 수업 요일 두 개 → 학생 '이번 주 할 일' 요일 표시가 바뀌어요 */
+export async function setClassDays(studentId: string, fd: FormData) {
+  await requireTeacher();
+  const days = fd.getAll("day").map(Number).filter((d) => Number.isInteger(d) && d >= 0 && d <= 6);
+  const uniqDays = Array.from(new Set(days)).sort((a, b) => a - b);
+  if (uniqDays.length !== 2) return;
+  await db().from("profiles").update({ class_days: uniqDays }).eq("id", studentId);
   revalidatePath(`/teacher/students/${studentId}`);
 }
 
@@ -135,7 +139,7 @@ export async function rerunAi(submissionId: string) {
   const { data: s } = await db().from("submissions").select("*").eq("id", submissionId).single();
   if (!s) return;
   const pos = await position(s.student_id);
-  const level = pos.type === "unit" ? `${pos.unit.stage} · ${pos.unit.title}` : pos.type === "final" ? pos.stage : "초급";
+  const level = pos.type === "unit" ? `${pos.unit.stage} · ${pos.unit.title}` : "초급";
   let photo = null;
   if (s.photo_path) {
     const { data } = await db().storage.from(BUCKET).download(s.photo_path);
@@ -176,12 +180,25 @@ export async function returnSubmission(submissionId: string, fd: FormData) {
     })
     .eq("id", submissionId);
   if (s.status !== "returned") await recordWritingCodes(s.student_id, codes, s.ref ?? "");
-  if (s.kind === "final" && decision) {
-    // 고쳐 쓴 최종 점검이면 원래 제출에 연결된 최종 점검을 바꿔요
-    const ids = [submissionId, s.parent_id].filter(Boolean) as string[];
-    await db().from("final_checks").update({ status: decision === "pass" ? "passed" : "redo" }).in("submission_id", ids);
-  }
   revalidatePath("/teacher/grading");
+}
+
+/** 워크시트 사진 확인만: ✓ 확인 / ↺ 다시 써 와요 (+ 한마디) */
+export async function checkPhoto(submissionId: string, decision: "ok" | "redo", comment: string) {
+  await requireTeacher();
+  if (decision !== "ok" && decision !== "redo") return;
+  await db()
+    .from("submissions")
+    .update({
+      status: "returned",
+      decision,
+      teacher_comment: comment.trim() || null,
+      seen: decision === "ok", // '다시 써 와요'만 학생 홈에 알림으로 떠요
+      returned_at: new Date().toISOString(),
+    })
+    .eq("id", submissionId);
+  revalidatePath("/teacher/grading");
+  revalidatePath("/teacher");
 }
 
 /* ───── 문항 DB ───── */
@@ -192,6 +209,7 @@ export type ImportSummary = {
   changedItems: number;
   newCodes: string[];
   problems: string[];
+  notes: string[];
 };
 
 async function readFile(fd: FormData): Promise<Parsed | null> {
@@ -204,6 +222,7 @@ export async function previewImport(fd: FormData): Promise<ImportSummary | null>
   await requireTeacher();
   const p = await readFile(fd);
   if (!p) return null;
+  await checkWordsOnly(p);
   const { data: old } = await db().from("items").select("*");
   const om = new Map(((old as Item[]) ?? []).map((i) => [i.id, i]));
   let newItems = 0;
@@ -222,13 +241,24 @@ export async function previewImport(fd: FormData): Promise<ImportSummary | null>
     changedItems,
     newCodes: p.codes.filter((c) => !have.has(c.code)).map((c) => c.code),
     problems: p.problems,
+    notes: p.notes,
   };
+}
+
+/** 단어만 있는 파일: 사이트에 있는 유닛인지 확인 */
+async function checkWordsOnly(p: Parsed) {
+  if (!p.wordsOnly) return;
+  const { data } = await db().from("units").select("id");
+  const have = new Set((data ?? []).map((u) => u.id as string));
+  const missing = Array.from(new Set(p.words.map((w) => w.unit_id).filter((id) => !have.has(id))));
+  if (missing.length) p.problems.push(`사이트에 없는 유닛이에요: ${missing.slice(0, 10).join(", ")}${missing.length > 10 ? " …" : ""} (문항 DB를 먼저 올려 주세요)`);
 }
 
 export async function applyImport(fd: FormData): Promise<{ ok: boolean; message: string }> {
   await requireTeacher();
   const p = await readFile(fd);
   if (!p) return { ok: false, message: "파일을 읽지 못했어요." };
+  await checkWordsOnly(p);
   if (p.problems.length) return { ok: false, message: "확인 필요 항목을 먼저 고쳐 주세요." };
   const d = db();
   const steps: [string, () => PromiseLike<{ error: { message: string } | null }>][] = [
@@ -239,9 +269,20 @@ export async function applyImport(fd: FormData): Promise<{ ok: boolean; message:
     ["문항", () => d.from("items").upsert(uniq(p.items, (r) => r.id))],
     ["점검 소재", () => d.from("stage_topics").upsert(uniq(p.topics, (r) => `${r.stage}|${r.no}`))],
   ];
+  // 단어를 새로 올린 유닛은 예전 단어를 지우고 새 목록으로 바꿔요
+  const wordUnits = Array.from(new Set(p.words.map((w) => w.unit_id)));
+  if (wordUnits.length) {
+    const { error } = await d.from("words").delete().in("unit_id", wordUnits);
+    if (error) return { ok: false, message: `단어 정리 중 문제: ${error.message}` };
+  }
   for (const [name, run] of steps) {
+    if (p.wordsOnly && name !== "단어") continue;
     const { error } = await run();
     if (error) return { ok: false, message: `${name} 저장 중 문제: ${error.message}` };
+  }
+  if (p.wordsOnly) {
+    revalidatePath("/teacher/db");
+    return { ok: true, message: `반영했어요. 단어 ${p.words.length}개 · 유닛 ${wordUnits.length}개` };
   }
   // 엑셀에서 지운 카드 · 문항은 사이트에서도 지우기 (학습 기록은 그대로)
   const unitIds = p.units.map((u) => u.id);
@@ -282,7 +323,7 @@ export async function createTask(fd: FormData) {
   if (!task) return;
   let unitItems: Item[] = [];
   if (mode === "units" && unitIds.length) {
-    const { data } = await db().from("items").select("*").in("unit_id", unitIds).neq("activity", "answer");
+    const { data } = await db().from("items").select("*").in("unit_id", unitIds).in("activity", ["choose", "arrange", "find", "ko2en"]);
     unitItems = (data as Item[]) ?? [];
   }
   for (const sid of students) {

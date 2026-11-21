@@ -23,9 +23,9 @@ const HANGUL = /[가-힣]/;
 
 export function activityFromLabel(label: string): string {
   const l = label.replace(/\s/g, "");
-  if (l.includes("손으로") || l.includes("손글씨")) return "hand"; // 확인 테스트 2부 (사진 · 쌤 첨삭)
-  if (l.includes("고르기")) return "choose"; // PREP 보기 고르기
-  if (l.includes("직접쓰기")) return "answer"; // PREP 직접 쓰기 (쌤 첨삭)
+  if (l.includes("손으로") || l.includes("손글씨")) return "hand"; // (예전) 손글씨 — 이제 워크시트 사진으로 내요, 앱에는 안 나와요
+  if (l.includes("고르기")) return "choose"; // 보기 고르기 (단어 배열 칸에서 같이 나와요)
+  if (l.includes("직접쓰기")) return "answer";
   if (l.includes("배열")) return "arrange";
   if (l.includes("틀린")) return "find";
   if (l.includes("한글") || l.includes("영어")) return "ko2en";

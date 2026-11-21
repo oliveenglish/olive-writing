@@ -16,6 +16,9 @@ export default async function Feedback({ params }: { params: { id: string } }) {
   if (!s || s.status !== "returned") notFound();
   if (!s.seen) await db().from("submissions").update({ seen: true }).eq("id", s.id);
   const [photo, markup] = await Promise.all([signedUrl(s.photo_path), signedUrl(s.markup_path)]);
+  const isWs = s.kind === "ws";
+  const isP9 = isWs && s.page === "p9";
+  const unitHub = `/student/unit/${encodeURIComponent(s.ref ?? "")}`;
   return (
     <>
       <StudentTop name={me.name} grade={me.grade} nickname={me.nickname} />
@@ -25,15 +28,27 @@ export default async function Feedback({ params }: { params: { id: string } }) {
         {s.teacher_comment && (
           <div className="bubble ok"><Olly size={60} /><div><b>쌤 한마디</b><div>{s.teacher_comment}</div></div></div>
         )}
-        <Correction original={s.text_content} corrected={s.corrected_text} photoUrl={photo} markupUrl={markup} />
-        {s.kind === "final" && s.decision && (
-          <div className={`card ${s.decision === "pass" ? "tint" : "warn"}`}>
-            {s.decision === "pass" ? "최종 점검 통과! 다음 단계가 열렸어요." : "조금만 더 연습하고 다시 써 보자. 복습 미션이 들어갔어요."}
+        {isWs && !isP9 ? (
+          photo && <div className="card col"><div className="label">내가 올린 사진</div><div className="photo"><img src={photo} alt="" /></div></div>
+        ) : (
+          <Correction original={s.text_content} corrected={s.corrected_text} photoUrl={photo} markupUrl={markup} />
+        )}
+        {isP9 && (
+          <div className="card strong col" style={{ gap: 8 }}>
+            <b>✏️ 이제 워크시트 10쪽에 다시 써요</b>
+            <div className="small">빨간 줄과 쌤 말을 보고 고쳐 쓴 다음 📷 사진을 올려요. 그다음 📱 확인 테스트!</div>
+            <Link href={unitHub} className="btn">이번 주 할 일에서 10쪽 사진 올리기</Link>
           </div>
         )}
-        {s.rewrite_wanted && !s.rewrite_done && <RewriteForm parentId={s.id} original={s.text_content} photoFirst={!!s.photo_path} />}
-        {s.rewrite_wanted && s.rewrite_done && <div className="card tint small">고쳐 쓴 글을 냈어요. 쌤이 확인하고 있어요.</div>}
-        <Link href="/student" className={s.rewrite_wanted && !s.rewrite_done ? "btn ghost" : "btn"}>홈으로</Link>
+        {s.kind === "ws" && s.decision === "redo" && (
+          <div className="card warn col" style={{ gap: 8 }}>
+            <b>↺ 쌤이 다시 써 오래요</b>
+            <Link href={unitHub} className="btn">다시 쓰고 사진 올리기</Link>
+          </div>
+        )}
+        {!isWs && s.rewrite_wanted && !s.rewrite_done && <RewriteForm parentId={s.id} original={s.text_content} photoFirst={!!s.photo_path} />}
+        {!isWs && s.rewrite_wanted && s.rewrite_done && <div className="card tint small">고쳐 쓴 글을 냈어요. 쌤이 확인하고 있어요.</div>}
+        <Link href="/student" className="btn ghost">홈으로</Link>
       </main>
     </>
   );

@@ -8,8 +8,8 @@ import type { CheckResult, QuizResult, Resp } from "@/app/actions/student";
 
 /**
  * 문제 풀기 공통 화면
- * - instant: 한 문제씩 바로 채점 (유닛 연습 · 복습)
- * - batch: 다 풀고 한꺼번에 채점 (확인 테스트 · 주간 점검 · 과제 · 최종 점검)
+ * - instant: 한 문제씩 바로 채점 (앱 문장 연습)
+ * - batch: 다 풀고 한꺼번에 채점 (확인 테스트 · 주간 점검 · 과제)
  */
 export default function QuizRunner({
   items,

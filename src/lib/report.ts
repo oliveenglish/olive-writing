@@ -41,7 +41,7 @@ export async function buildReport(studentId: string, month: string) {
   return {
     name: s?.name ?? "",
     grade: s?.grade ?? "",
-    where: pos.type === "unit" ? `${pos.unit.id} ${pos.unit.title}` : pos.type === "final" ? `${pos.stage} 최종 점검` : "—",
+    where: pos.type === "unit" ? `${pos.unit.id} ${pos.unit.title}` : "—",
     unitsDone: (passed ?? []).length,
     days: new Set(a.map((x) => String(x.created_at).slice(0, 10))).size,
     accFirst: acc(first),

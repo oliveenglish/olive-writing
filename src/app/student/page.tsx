@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { requireStudent } from "@/lib/auth";
 import { db } from "@/lib/supabase";
-import { allUnits, dueReviews, position, progressMap, weaknesses, weeklyRun } from "@/lib/data";
-import { addDays, iso, todayKST, weekStart, kst } from "@/lib/dates";
+import { allUnits, planState, position, progressMap, weaknesses, weeklyRun } from "@/lib/data";
+import { iso, todayKST, weekStart, kst } from "@/lib/dates";
+import { normDays, pageLabel } from "@/lib/plan";
 import StudentTop from "@/components/StudentTop";
+import WeekPlan from "@/components/WeekPlan";
 
 export const dynamic = "force-dynamic";
 
@@ -46,15 +48,18 @@ function Mission({ n, href, sub, title, right, strong, gold, tone }: { n: string
 export default async function StudentHome() {
   const me = await requireStudent();
   const today = todayKST();
-  const [pos, due, weekly, units, prog, weak] = await Promise.all([
+  const [pos, weekly, units, prog, weak] = await Promise.all([
     position(me.id),
-    dueReviews(me.id),
     weeklyRun(me.id),
     allUnits(),
     progressMap(me.id),
     weaknesses(me.id),
   ]);
-  const { data: returned } = await db().from("submissions").select("id,title").eq("student_id", me.id).eq("status", "returned").eq("seen", false).order("returned_at", { ascending: false });
+  const { data: returnedAll } = await db().from("submissions").select("id,title,kind,page,ref,decision").eq("student_id", me.id).eq("status", "returned").eq("seen", false).order("returned_at", { ascending: false });
+  // 워크시트 '다시 써 와요'는 따로 (그 유닛 이번 주 할 일에서 다시 올려요)
+  const redoSheets = (returnedAll ?? []).filter((x) => x.kind === "ws" && x.decision === "redo");
+  const returned = (returnedAll ?? []).filter((x) => !(x.kind === "ws" && x.decision === "redo"));
+  const plan = pos.type === "unit" ? await planState(me.id, pos.unit.id) : null;
   // 첨삭은 봤지만 아직 고쳐 쓰지 않은 글
   const { data: rewrites } = await db().from("submissions").select("id,title").eq("student_id", me.id).eq("status", "returned").eq("seen", true).eq("rewrite_wanted", true).eq("rewrite_done", false).order("returned_at", { ascending: false });
   const { data: tasks } = await db().from("task_assignees").select("task_id, tasks(title,due_date,message)").eq("student_id", me.id).eq("status", "assigned");
@@ -65,7 +70,7 @@ export default async function StudentHome() {
   const sentences = (weekAttempts ?? []).filter((a) => ["ko2en", "answer", "find"].includes(a.activity as string)).length;
   const days = new Set((weekAttempts ?? []).map((a) => kst(a.created_at).slice(0, 10))).size;
 
-  const stage = pos.type === "unit" ? pos.unit.stage : pos.type === "final" || pos.type === "waiting" ? pos.stage : units.at(-1)?.stage;
+  const stage = pos.type === "unit" ? pos.unit.stage : pos.type === "waiting" ? pos.stage : units.at(-1)?.stage;
   const stageUnits = units.filter((u) => u.stage === stage);
   const weeklyOpen = weekly && weekly.status === "pending" && iso(today) >= weekly.available_from;
   let n = 0;
@@ -73,7 +78,7 @@ export default async function StudentHome() {
 
   return (
     <>
-      <StudentTop name={me.name} grade={me.grade} nickname={me.nickname} extra={returned?.length ? <span className="chip">첨삭 도착 {returned.length}</span> : null} />
+      <StudentTop name={me.name} grade={me.grade} nickname={me.nickname} extra={returned.length ? <span className="chip">첨삭 도착 {returned.length}</span> : null} />
       <main className="wrap side">
         <section className="col">
           <h1 className="title">오늘의 미션</h1>
@@ -83,24 +88,14 @@ export default async function StudentHome() {
               <Mission key={t.task_id as string} gold n="쌤" href={`/student/task/${t.task_id}`} sub={`쌤이 낸 과제${task?.due_date ? ` · ${task.due_date.slice(5).replace("-", "/")}까지` : ""}`} title={task?.title ?? "과제"} right={task?.message ?? undefined} />
             );
           })}
-          {pos.type === "unit" && (
-            (pos.progress?.test_tries ?? 0) > 0 && !pos.progress?.passed ? (
-              <Mission tone="again" n={num()} href={`/student/unit/${encodeURIComponent(pos.unit.id)}`} sub={`확인 테스트 다시 도전 · ${pos.unit.id}`} title={pos.unit.title} right="재도전" />
-            ) : (
-              <Mission tone="new" n={num()} href={`/student/unit/${encodeURIComponent(pos.unit.id)}`} sub={`${pos.progress?.step ? "이어서" : "새 유닛"} · ${pos.unit.id}`} title={pos.unit.title} />
-            )
-          )}
-          {pos.type === "final" && (
-            <Mission strong n={num()} href={pos.submitted ? undefined : "/student/final"} sub={`${pos.stage} 끝!`} title={pos.submitted ? "최종 점검 제출 완료 · 쌤이 채점 중이에요" : "최종 점검 보기"} />
-          )}
-          {pos.type === "waiting" && <div className="card tint">다음 유닛을 쌤이 준비하고 있어요. 복습을 먼저 해요!</div>}
-          {pos.type === "done" && <div className="card tint">모든 과정을 마쳤어요! 🎉</div>}
-          {due.length > 0 && <Mission tone="again" n={num()} href="/student/review" sub="복습" title={`헷갈렸던 것 ${Math.min(due.length * 2, 8)}문제`} right="약 3분" />}
-          {(returned ?? []).map((s) => (
-            <Mission key={s.id as string} tone="check" n={num()} href={`/student/feedback/${s.id}`} sub="쌤 첨삭 도착" title={`${s.title} · 쌤 첨삭 도착`} right="원본 / 첨삭본" />
+          {redoSheets.map((x) => (
+            <Mission key={`redo-${x.id}`} tone="again" n="↺" href={`/student/unit/${encodeURIComponent(x.ref ?? "")}`} sub="쌤이 다시 써 오래요" title={`${x.ref} · ${pageLabel(x.page)}`} right="다시 올리기" />
           ))}
-          {(rewrites ?? []).map((s) => (
-            <Mission key={`rw-${s.id}`} tone="again" n={num()} href={`/student/feedback/${s.id}`} sub="고쳐 쓰기 · 다시 내기" title={`${s.title} · 첨삭 보고 고쳐 써요`} right="고쳐 쓰기" />
+          {returned.map((x) => (
+            <Mission key={x.id as string} tone="check" n={num()} href={`/student/feedback/${x.id}`} sub="쌤 첨삭 도착" title={x.title as string} right="원본 / 첨삭본" />
+          ))}
+          {(rewrites ?? []).map((x) => (
+            <Mission key={`rw-${x.id}`} tone="again" n={num()} href={`/student/feedback/${x.id}`} sub="고쳐 쓰기 · 다시 내기" title={`${x.title} · 첨삭 보고 고쳐 써요`} right="고쳐 쓰기" />
           ))}
           {weekly && weekly.status === "pending" && (
             weeklyOpen ? (
@@ -112,6 +107,20 @@ export default async function StudentHome() {
               </div>
             )
           )}
+          {pos.type === "unit" && plan && (
+            <div className="card col" style={{ gap: 12 }}>
+              <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-end" }}>
+                <div>
+                  <div className="label">{pos.unit.stage} · {pos.unit.id}</div>
+                  <h2 style={{ fontSize: 22 }}>{pos.unit.title} · 이번 주 할 일</h2>
+                </div>
+                <Link href={`/student/unit/${encodeURIComponent(pos.unit.id)}`} className="btn sm">열기</Link>
+              </div>
+              <WeekPlan compact unitId={pos.unit.id} states={plan} days={normDays(me.class_days)} today={today.getUTCDay()} />
+            </div>
+          )}
+          {pos.type === "waiting" && <div className="card tint">다음 유닛을 쌤이 준비하고 있어요.</div>}
+          {pos.type === "done" && <div className="card tint">모든 과정을 마쳤어요! 🎉</div>}
         </section>
         <aside className="col">
           <div className="card col">
@@ -125,7 +134,7 @@ export default async function StudentHome() {
                 );
               })}
             </div>
-            <div className="muted small">{stageUnits.length}개 유닛을 다 하면 최종 점검</div>
+            <div className="muted small">확인 테스트를 통과하면 다음 유닛이 열려요</div>
           </div>
           <div className="card col" style={{ gap: 8 }}>
             <h3 style={{ fontSize: 16 }}>이번 주 나의 기록</h3>
@@ -140,7 +149,6 @@ export default async function StudentHome() {
               <div>{weak[0].name}</div>
             </div>
           )}
-          <div className="muted small">다음 복습: {iso(addDays(today, 1)).slice(5).replace("-", "/")}</div>
         </aside>
       </main>
     </>

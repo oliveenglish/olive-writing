@@ -7,6 +7,8 @@ import { signedUrl, taughtCodes } from "@/lib/data";
 import { aiEnabled, type AiDraft } from "@/lib/ai";
 import GradingForm from "@/components/GradingForm";
 import { rerunAi, returnSubmission } from "@/app/actions/teacher";
+import { pageLabel } from "@/lib/plan";
+import PhotoCheck from "@/components/PhotoCheck";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // AI 첨삭 기다리는 시간
@@ -27,12 +29,28 @@ export default async function GradeOne({ params }: { params: { id: string } }) {
   const { data: parent } = s.parent_id ? await db().from("submissions").select("*").eq("id", s.parent_id).maybeSingle() : { data: null };
   const [pPhoto, pMarkup] = parent ? await Promise.all([signedUrl(parent.photo_path), signedUrl(parent.markup_path)]) : [null, null];
   void me;
+  // 확인만 하는 워크시트 사진 (1~2 · 6~7 · 8 · 10쪽)
+  if (s.kind === "ws" && s.page !== "p9") {
+    const before = s.page === "p10" && parent?.page === "p9" ? { photo: pPhoto, markup: pMarkup } : null;
+    return (
+      <>
+        <Link href="/teacher/grading?tab=check" className="small" style={{ fontWeight: 700 }}>← 사진 확인 목록</Link>
+        <h1 className="title">{st?.name} · {s.title}</h1>
+        <div style={{ maxWidth: before ? 900 : 560 }}>
+          <PhotoCheck
+            done={s.status === "returned"}
+            c={{ id: s.id, student: st?.name ?? "", unit: s.ref ?? "", page: s.page ?? "", label: pageLabel(s.page), when: kst(s.created_at).slice(5, 16).replace("T", " "), photo, again: !!s.parent_id && s.page !== "p10", before, decision: s.decision, comment: s.teacher_comment }}
+          />
+        </div>
+      </>
+    );
+  }
   return (
     <>
       <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-end" }}>
         <div>
           <Link href="/teacher/grading" className="small" style={{ fontWeight: 700 }}>← 첨삭 목록</Link>
-          <div className="label">{kst(s.created_at).slice(0, 16).replace("T", " ")} 제출 {s.rubric?.part1 ? `· 파트 1 문법 ${s.rubric.part1}` : ""}</div>
+          <div className="label">{kst(s.created_at).slice(0, 16).replace("T", " ")} 제출</div>
           <div className="row" style={{ gap: 8, alignItems: "center", marginTop: 4 }}>
             {s.parent_id ? (
               <span style={{ fontSize: 13, fontWeight: 800, color: "#C2561A", background: "#FFF1E6", border: "1px solid #C2561A", borderRadius: 999, padding: "3px 12px" }}>🔁 고쳐 쓴 글 · {round}번째 제출</span>

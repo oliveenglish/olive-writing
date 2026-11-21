@@ -18,7 +18,7 @@ export default async function Tasks() {
   return (
     <>
       <div>
-        <div className="label">주간 점검 · 최종 점검은 자동 · 그 밖에 더 시키고 싶을 때</div>
+        <div className="label">주간 점검은 자동 · 그 밖에 더 시키고 싶을 때</div>
         <h1 className="title">추가 과제 내기</h1>
       </div>
       <form action={createTask} className="grid2" style={{ gridTemplateColumns: "300px 1fr 340px" }}>

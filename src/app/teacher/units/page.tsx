@@ -2,11 +2,11 @@ import Link from "next/link";
 import { requireTeacher } from "@/lib/auth";
 import { db } from "@/lib/supabase";
 import { allUnits } from "@/lib/data";
-import { CardBody } from "@/components/UnitPlayer";
+import { CardBody } from "@/components/Explain";
 
 export const dynamic = "force-dynamic";
 
-const ACT: Record<string, string> = { choose: "고르기", arrange: "단어 배열", find: "틀린 표현 고치기", ko2en: "한글 → 영어", answer: "대답 쓰기", test: "확인 테스트", hand: "손글씨 2부" };
+const ACT: Record<string, string> = { choose: "고르기", arrange: "단어 배열", find: "틀린 표현 고치기", ko2en: "한글 → 영어", test: "확인 테스트", answer: "대답 (주간 점검용)" };
 
 /** 쌤용 유닛 보기: 단계 → 유닛 → 설명 카드 · 단어 · 문항 수 (학생 화면 그대로) */
 export default async function Units({ searchParams }: { searchParams: { stage?: string; unit?: string } }) {
@@ -21,7 +21,7 @@ export default async function Units({ searchParams }: { searchParams: { stage?: 
   if (unit) {
     const [{ data: cards }, { data: words }, { data: items }] = await Promise.all([
       db().from("unit_cards").select("ord,title,body,check_q,check_a,check_choices,audio_url").eq("unit_id", unit.id).order("ord"),
-      db().from("words").select("grp,word,meaning").eq("unit_id", unit.id),
+      db().from("words").select("ord,word,pos,meaning,example,example_ko").eq("unit_id", unit.id).order("ord"),
       db().from("items").select("activity").eq("unit_id", unit.id),
     ]);
     const count = new Map<string, number>();
@@ -39,10 +39,19 @@ export default async function Units({ searchParams }: { searchParams: { stage?: 
         </div>
         {(words ?? []).length > 0 && (
           <div className="card col" style={{ gap: 6 }}>
-            <h3 style={{ fontSize: 17 }}>단어 · 표현</h3>
-            <div className="row" style={{ gap: 8 }}>
-              {(words ?? []).map((w) => <span key={w.word} className="chip gray"><b className="en">{w.word}</b>&nbsp;{w.meaning}</span>)}
-            </div>
+            <h3 style={{ fontSize: 17 }}>익힐 단어 {(words ?? []).length}개 <span className="small muted">앱 단어 학습 · Warming Up Test에 나와요</span></h3>
+            <table className="t">
+              <tbody>
+                {(words ?? []).map((w, k) => (
+                  <tr key={w.word}>
+                    <td className="small muted">{k + 1}</td>
+                    <td><b className="en">{w.word}</b> <span className="small muted">{w.pos}</span></td>
+                    <td>{w.meaning}</td>
+                    <td className="small"><span className="en">{w.example}</span>{w.example_ko && <div className="muted">{w.example_ko}</div>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
         {(cards ?? []).map((c, k) => (

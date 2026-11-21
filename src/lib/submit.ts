@@ -1,6 +1,6 @@
 import { db, BUCKET } from "./supabase";
 import { aiCorrect, aiEnabled } from "./ai";
-import { position, scheduleReviews, taughtCodes } from "./data";
+import { position, taughtCodes } from "./data";
 import type { Profile } from "./auth";
 
 /** 사진 올리기 → 저장 경로 */
@@ -24,16 +24,19 @@ async function photoBase64(path: string) {
 /**
  * 글쓰기 제출 만들기.
  * AI 키가 있으면 첨삭 초안만 붙여 두고, 결과는 항상 쌤이 확인한 뒤에 보내요.
+ * 워크시트 사진 중 '확인만' 하는 쪽은 AI를 돌리지 않아요 (ai: false).
  */
 export async function createSubmission(opts: {
   student: Profile;
-  kind: "unit_answer" | "weekly" | "final" | "task" | "hand";
+  kind: "ws" | "weekly" | "task";
   ref: string;
   title: string;
   text: string | null;
   photo: File | null;
   rubric?: Record<string, unknown>;
   parentId?: string | null;
+  page?: string | null;
+  ai?: boolean;
 }) {
   const photo_path = await uploadPhoto(opts.student.id, opts.photo);
   const { data: sub, error } = await db()
@@ -47,14 +50,15 @@ export async function createSubmission(opts: {
       photo_path,
       rubric: opts.rubric ?? null,
       parent_id: opts.parentId ?? null,
+      page: opts.page ?? null,
     })
     .select("id")
     .single();
   if (error) throw new Error(error.message);
 
-  if (aiEnabled()) {
+  if (aiEnabled() && opts.ai !== false) {
     const pos = await position(opts.student.id);
-    const level = pos.type === "unit" ? `${pos.unit.stage} · ${pos.unit.title}` : pos.type === "final" ? pos.stage : "초급";
+    const level = pos.type === "unit" ? `${pos.unit.stage} · ${pos.unit.title}` : "초급";
     const codes = await taughtCodes(opts.student.id);
     const draft = await aiCorrect({
       task: opts.title,
@@ -95,11 +99,10 @@ async function classTeacher(student: Profile) {
   return t as Profile | null;
 }
 
-/** 글쓰기에서 찍힌 코드도 기록 → 약점 · 복습으로 연결 */
+/** 글쓰기에서 찍힌 코드도 기록 → 약점으로 연결 */
 export async function recordWritingCodes(studentId: string, codes: string[], ref: string) {
   if (!codes?.length) return;
   await db()
     .from("attempts")
     .insert(codes.map((c) => ({ student_id: studentId, context: "writing", correct: false, error_code: c, unit_id: ref })));
-  await scheduleReviews(studentId, codes);
 }

@@ -2,9 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireTeacher } from "@/lib/auth";
 import { db } from "@/lib/supabase";
-import { allUnits, position, progressMap, weaknesses, weeklyRun } from "@/lib/data";
+import { allUnits, planState, position, progressMap, weaknesses, weeklyRun } from "@/lib/data";
+import { PLAN, normDays, slotDay, weekdayName } from "@/lib/plan";
 import { addDays, monthKey, todayKST, weekStart, kst } from "@/lib/dates";
-import { resetPin, saveMemo, updateStudentInfo, setStartUnit, weeklyPostpone, weeklySkip } from "@/app/actions/teacher";
+import { resetPin, saveMemo, updateStudentInfo, setClassDays, setStartUnit, weeklyPostpone, weeklySkip } from "@/app/actions/teacher";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,9 @@ export default async function StudentDetail({ params }: { params: { id: string }
   const { data: subs } = await db().from("submissions").select("id,title,status,created_at").eq("student_id", s.id).order("created_at", { ascending: false }).limit(6);
   const { data: tests } = await db().from("unit_progress").select("unit_id,test_score,passed,skipped").eq("student_id", s.id).not("test_score", "is", null);
   const current = pos.type === "unit" ? pos.unit.id : "";
+  const days = normDays(s.class_days);
+  const plan = pos.type === "unit" ? await planState(s.id, pos.unit.id) : null;
+  const planMap = new Map((plan ?? []).map((p) => [p.key, p]));
 
   return (
     <>
@@ -53,8 +57,28 @@ export default async function StudentDetail({ params }: { params: { id: string }
                 })}
               </div>
             ))}
-            <div className="small muted">지금: {pos.type === "unit" ? `${pos.unit.id} ${pos.unit.title} · ${(pos.progress?.step ?? 0) + 1}/7 단계` : pos.type === "final" ? `${pos.stage} 최종 점검` : "—"}</div>
+            <div className="small muted">지금: {pos.type === "unit" ? `${pos.unit.id} ${pos.unit.title}` : pos.type === "done" ? "모두 마침" : "—"}</div>
           </div>
+          {plan && pos.type === "unit" && (
+            <div className="card col" style={{ gap: 8 }}>
+              <h3 style={{ fontSize: 17 }}>이번 주 할 일 · {pos.unit.id} <span className="small muted">{plan.filter((p) => p.done).length} / {plan.length} 완료</span></h3>
+              <table className="t">
+                <tbody>
+                  {PLAN.map((t) => {
+                    const p = planMap.get(t.key)!;
+                    return (
+                      <tr key={t.key}>
+                        <td style={{ width: 40 }}><b>{weekdayName(slotDay(t.slot, days))}</b></td>
+                        <td style={{ width: 28 }}>{p.done ? "☑" : p.tone === "again" ? "↺" : "☐"}</td>
+                        <td>{t.icons} {t.title}</td>
+                        <td className="small">{p.status}{p.submissionId && t.type === "sheet" ? <> · <Link href={`/teacher/grading/${p.submissionId}`} style={{ fontWeight: 800 }}>보기</Link></> : null}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
           <div className="card col">
             <h3 style={{ fontSize: 17 }}>주별 정답률</h3>
             <div className="row" style={{ alignItems: "flex-end", gap: 24, height: 150 }}>
@@ -103,6 +127,20 @@ export default async function StudentDetail({ params }: { params: { id: string }
               </select>
               <div className="small muted">고른 유닛 앞은 모두 “건너뜀(통과)”으로 처리돼요.</div>
               <button className="btn sm">이 유닛부터 시작</button>
+            </form>
+          </div>
+          <div className="card col">
+            <h3 style={{ fontSize: 17 }}>수업 요일 <span className="small muted">두 개 고르기</span></h3>
+            <form action={setClassDays.bind(null, s.id)} className="col" style={{ gap: 8 }}>
+              <div className="row" style={{ gap: 6 }}>
+                {[1, 2, 3, 4, 5, 6, 0].map((d) => (
+                  <label key={d} className="chip gray" style={{ cursor: "pointer", gap: 4 }}>
+                    <input type="checkbox" name="day" value={d} defaultChecked={days.includes(d)} /> {weekdayName(d)}
+                  </label>
+                ))}
+              </div>
+              <div className="small muted">학생 &apos;이번 주 할 일&apos;의 요일이 이 수업일에 맞춰 바뀌어요. 지금: {weekdayName(days[0])} · {weekdayName(days[1])}</div>
+              <button className="btn ghost sm">저장</button>
             </form>
           </div>
           <div className="card col">

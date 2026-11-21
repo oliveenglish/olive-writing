@@ -26,6 +26,7 @@ create table if not exists profiles (
   start_unit text,
   memo text,
   ai_autosend boolean default false,      -- 쌤 설정: AI 첨삭을 쌤 확인 없이 바로 보내기
+  class_days int[] default '{2,5}',        -- 수업 요일 두 개 (0 일 ~ 6 토) · 기본 화 · 금
   last_seen_at timestamptz,
   created_at timestamptz default now()
 );
@@ -59,11 +60,19 @@ alter table unit_cards add column if not exists check_choices text;
 
 create table if not exists words (
   unit_id text references units(id) on delete cascade,
+  ord int default 0,                       -- 단어 순서
   grp text,
   word text not null,
+  pos text,                                -- 품사 (n. v. adj. …)
   meaning text,
+  example text,                            -- 예문 (눌러서 듣기)
+  example_ko text,                         -- 예문 뜻
   primary key (unit_id, word)
 );
+alter table words add column if not exists ord int default 0;
+alter table words add column if not exists pos text;
+alter table words add column if not exists example text;
+alter table words add column if not exists example_ko text;
 
 create table if not exists items (
   id text primary key,                     -- 유닛|활동|번호
@@ -168,6 +177,18 @@ create table if not exists submissions (
 alter table submissions add column if not exists parent_id uuid references submissions(id) on delete set null;
 alter table submissions add column if not exists rewrite_wanted boolean default false;
 alter table submissions add column if not exists rewrite_done boolean default false;
+alter table submissions add column if not exists page text;  -- 워크시트 쪽: p12 · p67 · p8 · p9 · p10
+
+-- 이번 주 할 일 체크 (앱 활동 · 수업 칸)
+create table if not exists unit_checks (
+  student_id uuid references profiles(id) on delete cascade,
+  unit_id text references units(id) on delete cascade,
+  task text not null,                      -- vocab · warmup · practice · class1 · class2
+  score int,
+  total int,
+  done_at timestamptz default now(),
+  primary key (student_id, unit_id, task)
+);
 
 -- 주간 점검
 create table if not exists weekly_runs (
@@ -230,11 +251,12 @@ create table if not exists reports (
 -- RLS 켜기 (정책 없음 = 서버만 접근)
 do $$ declare t text; begin
   foreach t in array array['classes','profiles','units','unit_cards','words','items','error_codes','stage_topics',
-    'attempts','unit_progress','reviews','submissions','weekly_runs','final_checks','tasks','task_assignees','reports']
+    'attempts','unit_progress','reviews','submissions','weekly_runs','final_checks','tasks','task_assignees','reports','unit_checks']
   loop execute format('alter table %I enable row level security', t); end loop;
 end $$;
 
 alter table profiles add column if not exists nickname text;
+alter table profiles add column if not exists class_days int[] default '{2,5}';
 
 -- 서버(관리자 키)에 표 사용 권한 주기
 -- (2026년부터 새 Supabase 프로젝트는 이걸 직접 써 줘야 해요. 브라우저용 키에는 주지 않아요.)

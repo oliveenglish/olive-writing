@@ -1,10 +1,10 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import { requireStudent } from "@/lib/auth";
-import { db } from "@/lib/supabase";
+import { db, BUCKET } from "@/lib/supabase";
 import { acceptedAnswers, diffMarks, isAutoGraded, isCorrect, isSureKind, kindOf, toPublic, type Item, type Mark, type PublicItem } from "@/lib/grading";
-import { dueReviews, scheduleReviews } from "@/lib/data";
 import { createSubmission } from "@/lib/submit";
+import { SHEET_PAGES, pageLabel, taskOf } from "@/lib/plan";
 
 /**
  * correct: 맞음 · 틀림 · (쌤 채점이면) null
@@ -44,13 +44,13 @@ async function codeTexts(codes: string[]): Promise<Map<string, CodeText>> {
 }
 
 /**
- * 문제 하나 바로 채점 (유닛 연습 · 복습)
+ * 문제 하나 바로 채점 (유닛 문장 연습)
  * attempt 1 = 첫 답 (기록은 이것만) / attempt 2 = 다시 풀기 (기록 안 함)
  */
 export async function checkItem(
   itemId: string,
   response: string,
-  context: "unit" | "review",
+  context: "unit" | "retry",
   reason?: string,
   attempt = 1
 ): Promise<CheckResult> {
@@ -85,13 +85,6 @@ export async function checkItem(
     return { correct, answers: [], bubble: null, why: t?.why ?? null, sure, retry: true, marks: d.marks, missing: d.missing };
   }
   return { correct, answers, bubble: sure ? t?.bubble ?? null : null, why: t?.why ?? null, sure, retry: false };
-}
-
-export async function saveStep(unitId: string, step: number) {
-  const me = await requireStudent();
-  await db()
-    .from("unit_progress")
-    .upsert({ student_id: me.id, unit_id: unitId, step, updated_at: new Date().toISOString() }, { onConflict: "student_id,unit_id" });
 }
 
 /** 여러 문제 한꺼번에 채점하고 기록 */
@@ -174,7 +167,6 @@ export async function submitTest(unitId: string, responses: Resp[]): Promise<Qui
       {
         student_id: me.id,
         unit_id: unitId,
-        step: passed ? 7 : 6,
         test_score: g.score,
         test_tries: (prog?.test_tries ?? 0) + 1,
         fails_in_row: fails,
@@ -183,7 +175,6 @@ export async function submitTest(unitId: string, responses: Resp[]): Promise<Qui
       },
       { onConflict: "student_id,unit_id" }
     );
-  await scheduleReviews(me.id, g.wrongCodes);
   revalidatePath("/student");
   return {
     score: g.score,
@@ -198,43 +189,6 @@ export async function submitTest(unitId: string, responses: Resp[]): Promise<Qui
       ? `아깝다! 비슷한 문제 ${redo.length}개만 더 풀고 확인 테스트를 다시 봐요.`
       : "아깝다! 아래 '왜?'를 읽고 확인 테스트를 다시 봐요.",
   };
-}
-
-/** 질문에 대답하기 (쌤 첨삭) */
-export async function submitAnswers(unitId: string, fd: FormData) {
-  const me = await requireStudent();
-  const ids = fd.getAll("id").map(String);
-  const answers = fd.getAll("answer").map(String);
-  const items = await getItems(ids);
-  const lines: string[] = [];
-  const rows = ids.map((id, i) => {
-    const it = items.get(id);
-    lines.push(`Q${i + 1}. ${it?.prompt ?? ""}\nA. ${answers[i] ?? ""}`);
-    return { student_id: me.id, item_id: id, unit_id: unitId, activity: "answer", context: "unit", response: answers[i] ?? "", correct: null };
-  });
-  if (rows.length) await db().from("attempts").insert(rows);
-  const photo = fd.get("photo");
-  const { data: unit } = await db().from("units").select("title").eq("id", unitId).single();
-  await createSubmission({
-    student: me,
-    kind: "unit_answer",
-    ref: unitId,
-    title: `${unitId} ${unit?.title ?? ""} · 질문에 대답하기`,
-    text: lines.join("\n\n"),
-    photo: photo instanceof File ? photo : null,
-    rubric: { memo: ids.map((id, i) => (items.get(id)?.memo ? `Q${i + 1}. ${items.get(id)?.memo}` : "")).filter(Boolean).join(" / ") || null, answers: ids.map((id) => items.get(id)?.answer ?? "") },
-  });
-  await saveStep(unitId, 6);
-}
-
-/** 오늘의 복습 끝 */
-export async function finishReview(responses: Resp[]): Promise<QuizResult> {
-  const me = await requireStudent();
-  const g = await gradeBatch(me.id, responses, "review", false); // 한 문제씩 이미 기록함
-  const due = await dueReviews(me.id);
-  if (due.length) await db().from("reviews").update({ done: true }).in("id", due.map((d) => d.id));
-  revalidatePath("/student");
-  return { score: g.score, total: g.total, passed: true, wrong: g.wrong, message: "오늘 복습 끝! 틀린 건 며칠 뒤에 다시 나와요." };
 }
 
 /** 주간 점검 */
@@ -257,10 +211,9 @@ export async function finishWeekly(weekStart: string, responses: Resp[]): Promis
       console.error("주간 점검 글 저장 실패", e);
     }
   }
-  // 쌤 기준: 10문제 중 3개까지 틀리면 인정 (7 · 8 · 9 · 10개 맞음) / 4개 이상 틀리면 (6개 이하) 복습
+  // 쌤 기준: 10문제 중 3개까지 틀리면 인정 (7 · 8 · 9 · 10개 맞음) / 4개 이상 틀리면 (6개 이하) 다시 보기
   const wrongCount = g.total - g.score;
   const passed = wrongCount <= 3;
-  if (!passed) await scheduleReviews(me.id, g.wrongCodes);
   revalidatePath("/student");
   return {
     score: g.score,
@@ -269,7 +222,7 @@ export async function finishWeekly(weekStart: string, responses: Resp[]): Promis
     wrong: g.wrong,
     message: passed
       ? "주간 점검 통과! 이번 주도 잘했어요."
-      : "틀린 문제가 4개 이상이라 복습이 생겼어요. 틀린 규칙을 다시 연습해요.",
+      : "틀린 문제가 4개 이상이에요. 아래 '왜?'를 읽고 그 유닛 설명을 다시 봐요. 쌤도 같이 볼게요.",
   };
 }
 
@@ -295,39 +248,8 @@ export async function finishTask(taskId: string, responses: Resp[], fd?: FormDat
     .update({ status: "done", score: g.score, completed_at: new Date().toISOString() })
     .eq("task_id", taskId)
     .eq("student_id", me.id);
-  await scheduleReviews(me.id, g.wrongCodes);
   revalidatePath("/student");
   return { score: g.score, total: g.total, passed: true, wrong: g.wrong, message: "과제 끝! 쌤에게 전달됐어요." };
-}
-
-/** 최종 점검 파트 1 (문법) */
-export async function finishFinalPart1(stage: string, responses: Resp[]): Promise<QuizResult> {
-  const me = await requireStudent();
-  const g = await gradeBatch(me.id, responses, "final");
-  await db().from("final_checks").insert({ student_id: me.id, stage, part1_score: g.score, part1_total: g.total, status: "part1" });
-  await scheduleReviews(me.id, g.wrongCodes);
-  return { score: g.score, total: g.total, passed: true, wrong: g.wrong, message: "파트 1 끝! 이제 글쓰기를 해요." };
-}
-
-/** 최종 점검 파트 2 (글쓰기) */
-export async function submitFinalWriting(checkId: string, fd: FormData) {
-  const me = await requireStudent();
-  const { data: chk } = await db().from("final_checks").select("*").eq("id", checkId).eq("student_id", me.id).single();
-  if (!chk) return;
-  const topic = String(fd.get("topic") || "");
-  const text = String(fd.get("writing") || "").trim();
-  const photo = fd.get("photo");
-  const subId = await createSubmission({
-    student: me,
-    kind: "final",
-    ref: chk.stage,
-    title: `${chk.stage} 최종 점검 · ${topic}`,
-    text: text || null,
-    photo: photo instanceof File ? photo : null,
-    rubric: { part1: `${chk.part1_score} / ${chk.part1_total}` },
-  });
-  await db().from("final_checks").update({ status: "submitted", submission_id: subId }).eq("id", checkId);
-  revalidatePath("/student");
 }
 
 export async function markSeen(submissionId: string) {
@@ -335,7 +257,7 @@ export async function markSeen(submissionId: string) {
   await db().from("submissions").update({ seen: true }).eq("id", submissionId).eq("student_id", me.id);
 }
 
-/** 고쳐 쓰기 · 다시 내기: 쌤 첨삭을 보고 고친 글 (사진 또는 글) */
+/** 고쳐 쓰기 · 다시 내기 (주간 점검 · 쌤 과제 글) — 워크시트 9쪽은 10쪽 사진이 고쳐 쓰기예요 */
 export async function submitRewrite(parentId: string, fd: FormData) {
   const me = await requireStudent();
   const { data: p } = await db().from("submissions").select("*").eq("id", parentId).eq("student_id", me.id).maybeSingle();
@@ -358,24 +280,83 @@ export async function submitRewrite(parentId: string, fd: FormData) {
   return { ok: true, message: "고쳐 쓴 글을 쌤에게 보냈어요!" };
 }
 
-/** 확인 테스트 2부 · 손으로 쓰기 (사진) — 통과와는 상관없이 쌤이 첨삭 */
-export async function submitHand(unitId: string, itemId: string, fd: FormData) {
+/* ───── 이번 주 할 일 ───── */
+
+/** 앱 활동을 마치면 체크 (단어 학습 · Warming Up Test · 문장 연습) */
+export async function saveCheck(unitId: string, task: "vocab" | "warmup" | "practice", score?: number, total?: number) {
   const me = await requireStudent();
-  const item = (await getItems([itemId])).get(itemId);
+  if (!["vocab", "warmup", "practice"].includes(task)) return;
+  await db()
+    .from("unit_checks")
+    .upsert(
+      { student_id: me.id, unit_id: unitId, task, score: score ?? null, total: total ?? null, done_at: new Date().toISOString() },
+      { onConflict: "student_id,unit_id,task" }
+    );
+  revalidatePath("/student");
+}
+
+/** 수업 칸: 학생이 직접 체크 · 체크 풀기 */
+export async function toggleClass(unitId: string, task: "class1" | "class2") {
+  const me = await requireStudent();
+  if (task !== "class1" && task !== "class2") return;
+  const { data: row } = await db().from("unit_checks").select("task").eq("student_id", me.id).eq("unit_id", unitId).eq("task", task).maybeSingle();
+  if (row) await db().from("unit_checks").delete().eq("student_id", me.id).eq("unit_id", unitId).eq("task", task);
+  else await db().from("unit_checks").insert({ student_id: me.id, unit_id: unitId, task });
+  revalidatePath(`/student/unit/${encodeURIComponent(unitId)}`);
+  revalidatePath("/student");
+}
+
+/**
+ * 워크시트 쪽 사진 올리기
+ * - 쌤이 아직 안 본 사진이 있으면 새 사진으로 바꿔요
+ * - '다시 써 와요'를 받은 뒤 올리면 그 사진에 이어 붙여요
+ * - 10쪽 다시 쓰기는 9쪽 첨삭에 이어 붙여요 (쌤이 나란히 비교)
+ */
+export async function uploadSheet(unitId: string, page: string, fd: FormData): Promise<{ ok: boolean; message: string }> {
+  const me = await requireStudent();
+  const task = taskOf(page);
+  if (!task || !SHEET_PAGES.includes(task.key)) return { ok: false, message: "어느 쪽인지 알 수 없어요." };
   const photo = fd.get("photo");
   const file = photo instanceof File && photo.size ? photo : null;
-  const text = String(fd.get("text") || "").trim() || null;
-  if (!item || (!file && !text)) return { ok: false, message: "종이에 쓴 글 사진을 올려 주세요." };
-  await db().from("attempts").insert({ student_id: me.id, item_id: item.id, unit_id: unitId, activity: "hand", context: "test", response: text ?? "(사진)", correct: null });
+  if (!file) return { ok: false, message: "워크시트 사진을 올려 주세요." };
+  const { data: unit } = await db().from("units").select("id,title").eq("id", unitId).maybeSingle();
+  if (!unit) return { ok: false, message: "유닛을 찾지 못했어요." };
+  const { data: prev } = await db()
+    .from("submissions")
+    .select("id,status,decision,photo_path")
+    .eq("student_id", me.id)
+    .eq("kind", "ws")
+    .eq("ref", unitId)
+    .eq("page", page)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  let parentId: string | null = null;
+  if (prev && prev.status === "submitted") {
+    // 쌤이 아직 안 봤어요 → 예전 사진은 지우고 새로 내요
+    if (prev.photo_path) await db().storage.from(BUCKET).remove([prev.photo_path]);
+    await db().from("submissions").delete().eq("id", prev.id);
+  } else if (prev && prev.status === "returned" && prev.decision === "redo") {
+    parentId = prev.id;
+    // 다시 올렸으니 홈의 '다시 써 와요' 알림은 내려요
+    await db().from("submissions").update({ seen: true }).eq("id", prev.id);
+  }
+  if (page === "p10" && !parentId) {
+    const { data: p9 } = await db().from("submissions").select("id").eq("student_id", me.id).eq("kind", "ws").eq("ref", unitId).eq("page", "p9").order("created_at", { ascending: false }).limit(1).maybeSingle();
+    parentId = p9?.id ?? null;
+  }
   await createSubmission({
     student: me,
-    kind: "hand",
+    kind: "ws",
     ref: unitId,
-    title: `${unitId} 확인 테스트 2부 · 손으로 쓰기`,
-    text: text ? `과제: ${item.prompt}\n\n${text}` : `과제: ${item.prompt}`,
+    page,
+    title: `${unitId} ${unit.title} · ${pageLabel(page)}`,
+    text: null,
     photo: file,
-    rubric: { memo: item.memo ?? null, example: item.answer ?? null },
+    parentId,
+    ai: !!task.correct,
   });
+  revalidatePath(`/student/unit/${encodeURIComponent(unitId)}`);
   revalidatePath("/student");
-  return { ok: true, message: "쌤에게 보냈어요! 첨삭이 오면 홈에서 볼 수 있어요." };
+  return { ok: true, message: task.correct ? "쌤에게 보냈어요! 첨삭이 오면 '첨삭 확인'에 떠요." : "쌤에게 보냈어요!" };
 }

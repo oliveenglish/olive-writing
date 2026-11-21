@@ -99,9 +99,9 @@ export default function GradingForm({
   const [comment, setComment] = useState(initial.comment ?? draft?.comment ?? "");
   const [picked, setPicked] = useState<string[]>(initial.codes.length ? initial.codes : draft?.error_codes ?? []);
   const [rewrite, setRewrite] = useState(initial.rewrite ?? true);
-  const [decision, setDecision] = useState(initial.decision ?? "pass");
   const [busy, setBusy] = useState(false);
-  const isFinal = kind === "final";
+  // 워크시트 9쪽은 10쪽 사진이 고쳐 쓰기라서 따로 요청하지 않아요
+  const isSheet = kind === "ws";
 
   async function submit() {
     setBusy(true);
@@ -109,8 +109,7 @@ export default function GradingForm({
     fd.append("corrected", corrected);
     fd.append("comment", comment);
     picked.forEach((c) => fd.append("codes", c));
-    if (isFinal) fd.append("decision", decision);
-    fd.append("rewrite", rewrite ? "1" : "0");
+    fd.append("rewrite", rewrite && !isSheet ? "1" : "0");
     if (drew && canvas.current) {
       const blob: Blob = await new Promise((res) => canvas.current!.toBlob((b) => res(b!), "image/png"));
       fd.append("markup", new File([blob], "markup.png", { type: "image/png" }));
@@ -162,20 +161,14 @@ export default function GradingForm({
         <label className="field"><span>학생에게 한마디</span>
           <textarea className="textarea" style={{ fontSize: 15, minHeight: 80 }} value={comment} onChange={(e) => setComment(e.target.value)} />
         </label>
-        {isFinal && (
-          <div className="col" style={{ gap: 8 }}>
-            <div className="label">결정</div>
-            <div className="tabs">
-              <button type="button" className={decision === "pass" ? "on" : ""} onClick={() => setDecision("pass")}>통과 · 다음 단계 열기</button>
-              <button type="button" className={decision === "redo" ? "on" : ""} onClick={() => setDecision("redo")}>보충 후 재제출</button>
-            </div>
-            <div className="small muted">찍은 오류는 복습 미션으로 자동 연결돼요.</div>
-          </div>
+        {isSheet ? (
+          <div className="small muted">보내면 학생 &lsquo;첨삭 확인&rsquo; 칸에 떠요. 학생은 첨삭을 보고 워크시트 10쪽에 다시 써서 사진을 올려요.</div>
+        ) : (
+          <label className="row" style={{ gap: 8, flexWrap: "nowrap", cursor: "pointer" }}>
+            <input type="checkbox" checked={rewrite} onChange={(e) => setRewrite(e.target.checked)} />
+            <span className="small"><b>고쳐 쓰기 요청</b> — 학생이 첨삭을 보고 고쳐서 다시 내요</span>
+          </label>
         )}
-        <label className="row" style={{ gap: 8, flexWrap: "nowrap", cursor: "pointer" }}>
-          <input type="checkbox" checked={rewrite} onChange={(e) => setRewrite(e.target.checked)} />
-          <span className="small"><b>고쳐 쓰기 요청</b> — 학생이 첨삭을 보고 고쳐서 다시 내요</span>
-        </label>
         <button className="btn" disabled={busy} onClick={submit}>{busy ? "저장 중…" : returned ? "고쳐서 다시 보내기" : "학생에게 보내기"}</button>
       </aside>
     </div>

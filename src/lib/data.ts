@@ -1,6 +1,7 @@
 import { db } from "./supabase";
 import { addDays, iso, todayKST, weekStart } from "./dates";
 import type { Item } from "./grading";
+import { PLAN, type TaskState } from "./plan";
 
 export type Unit = {
   id: string;
@@ -33,40 +34,20 @@ export async function progressMap(studentId: string): Promise<Map<string, Progre
   return new Map(((data as Progress[]) ?? []).map((p) => [p.unit_id, p]));
 }
 
-export async function passedFinalStages(studentId: string): Promise<Set<string>> {
-  const { data } = await db().from("final_checks").select("stage,status").eq("student_id", studentId);
-  return new Set((data ?? []).filter((r) => r.status === "passed").map((r) => r.stage as string));
-}
-
 export type Position =
   | { type: "unit"; unit: Unit; progress?: Progress }
-  | { type: "final"; stage: string; submitted: boolean }
   | { type: "waiting"; stage: string } // 다음 유닛 준비 중
   | { type: "done" };
 
-/** 학생이 지금 있어야 할 자리 */
+/** 학생이 지금 있어야 할 자리: 아직 통과 못 한 첫 유닛 (단계 끝 최종 점검은 없어요) */
 export async function position(studentId: string): Promise<Position> {
-  const [units, prog, finals] = await Promise.all([allUnits(), progressMap(studentId), passedFinalStages(studentId)]);
+  const [units, prog] = await Promise.all([allUnits(), progressMap(studentId)]);
   if (!units.length) return { type: "waiting", stage: "" };
-  const stages = Array.from(new Set(units.map((u) => u.stage)));
-  for (const stage of stages) {
-    const su = units.filter((u) => u.stage === stage);
-    for (const u of su) {
-      const p = prog.get(u.id);
-      if (p?.passed) continue;
-      if (u.status !== "published") return { type: "waiting", stage };
-      return { type: "unit", unit: u, progress: p };
-    }
-    if (!finals.has(stage)) {
-      const { data } = await db()
-        .from("final_checks")
-        .select("status")
-        .eq("student_id", studentId)
-        .eq("stage", stage)
-        .eq("status", "submitted")
-        .limit(1);
-      return { type: "final", stage, submitted: (data ?? []).length > 0 };
-    }
+  for (const u of units) {
+    const p = prog.get(u.id);
+    if (p?.passed) continue;
+    if (u.status !== "published") return { type: "waiting", stage: u.stage };
+    return { type: "unit", unit: u, progress: p };
   }
   return { type: "done" };
 }
@@ -96,42 +77,14 @@ export async function weaknesses(studentId: string) {
   return codes.map(([code, count]) => ({ code, name: (names.get(code) as string) ?? code, count }));
 }
 
-/** 틀린 코드 → 1 · 3 · 7일 뒤 복습 */
-export async function scheduleReviews(studentId: string, codes: string[]) {
-  const uniq = Array.from(new Set(codes.filter(Boolean)));
-  if (!uniq.length) return;
-  const { data: pending } = await db()
-    .from("reviews")
-    .select("error_code")
-    .eq("student_id", studentId)
-    .eq("done", false)
-    .in("error_code", uniq);
-  const has = new Set((pending ?? []).map((r) => r.error_code));
-  const t = todayKST();
-  const rows = uniq
-    .filter((c) => !has.has(c))
-    .flatMap((c) => [1, 3, 7].map((d) => ({ student_id: studentId, error_code: c, due_date: iso(addDays(t, d)) })));
-  if (rows.length) await db().from("reviews").insert(rows);
-}
-
-export async function dueReviews(studentId: string) {
-  const { data } = await db()
-    .from("reviews")
-    .select("*")
-    .eq("student_id", studentId)
-    .eq("done", false)
-    .lte("due_date", iso(todayKST()));
-  return data ?? [];
-}
-
-/** 오류 코드에 맞는 문제 고르기 (복습 · 점검용 새 문장 먼저, 최근에 푼 건 뒤로) */
+/** 오류 코드에 맞는 문제 고르기 (점검용 새 문장 먼저, 최근에 푼 건 뒤로) */
 export async function pickItemsForCodes(studentId: string, codes: string[], count: number): Promise<Item[]> {
   if (!codes.length) return [];
   const { data } = await db()
     .from("items")
     .select("*")
     .in("error_code", codes)
-    .neq("activity", "answer");
+    .in("activity", ["choose", "arrange", "find", "ko2en"]);
   const items = (data as Item[]) ?? [];
   const since = addDays(todayKST(), -7).toISOString();
   const { data: recent } = await db()
@@ -211,4 +164,44 @@ export async function recordedWeakCodes(studentId: string): Promise<string[]> {
   const sorted = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
   const strong = sorted.filter(([, n]) => n >= 3).map(([c]) => c);
   return strong.length ? strong : sorted.slice(0, 3).map(([c]) => c);
+}
+
+/**
+ * 유닛 한 개의 '이번 주 할 일' 상태
+ * 앱 · 수업 칸 = unit_checks / 사진 칸 = 가장 최근 워크시트 제출 / 확인 테스트 = unit_progress
+ */
+export async function planState(studentId: string, unitId: string): Promise<TaskState[]> {
+  const [{ data: checks }, { data: subs }, { data: prog }] = await Promise.all([
+    db().from("unit_checks").select("task,score,total").eq("student_id", studentId).eq("unit_id", unitId),
+    db().from("submissions").select("id,page,status,decision,seen,created_at").eq("student_id", studentId).eq("kind", "ws").eq("ref", unitId).order("created_at", { ascending: false }),
+    db().from("unit_progress").select("passed,test_tries,test_score").eq("student_id", studentId).eq("unit_id", unitId).maybeSingle(),
+  ]);
+  const ck = new Map((checks ?? []).map((c) => [c.task as string, c]));
+  const latest = new Map<string, { id: string; status: string; decision: string | null; seen: boolean }>();
+  for (const x of subs ?? []) if (x.page && !latest.has(x.page)) latest.set(x.page as string, x as never);
+  return PLAN.map((t): TaskState => {
+    if (t.type === "app" && t.key === "test") {
+      if (prog?.passed) return { key: t.key, done: true, status: "통과", tone: "done", score: prog.test_score != null ? `${prog.test_score} / 8` : null };
+      if ((prog?.test_tries ?? 0) > 0) return { key: t.key, done: false, status: "다시 도전", tone: "again" };
+      return { key: t.key, done: false, status: "", tone: "todo" };
+    }
+    if (t.type === "app" || t.type === "class") {
+      const c = ck.get(t.key);
+      const score = c && c.total ? `${c.score} / ${c.total}` : null;
+      return c ? { key: t.key, done: true, status: score ?? "했어요", tone: "done", score } : { key: t.key, done: false, status: "", tone: "todo" };
+    }
+    if (t.type === "feedback") {
+      const p9 = latest.get("p9");
+      if (!p9) return { key: t.key, done: false, status: "9쪽을 올리면 와요", tone: "todo" };
+      if (p9.status !== "returned") return { key: t.key, done: false, status: "쌤이 첨삭 중", tone: "wait", submissionId: p9.id };
+      return p9.seen
+        ? { key: t.key, done: true, status: "봤어요", tone: "done", submissionId: p9.id }
+        : { key: t.key, done: false, status: "첨삭 도착!", tone: "new", submissionId: p9.id };
+    }
+    const sub = latest.get(t.key);
+    if (!sub) return { key: t.key, done: false, status: "", tone: "todo" };
+    if (sub.status !== "returned") return { key: t.key, done: true, status: t.correct ? "쌤이 첨삭 중" : "쌤 확인 중", tone: "wait", submissionId: sub.id };
+    if (sub.decision === "redo") return { key: t.key, done: false, status: "다시 써 와요", tone: "again", submissionId: sub.id };
+    return { key: t.key, done: true, status: t.correct ? "첨삭 완료" : "쌤 확인 ✓", tone: "done", submissionId: sub.id };
+  });
 }

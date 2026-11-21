@@ -20,20 +20,24 @@ export default async function DbPage() {
         <h1 className="title">문항 DB <span className="small muted">오류 코드 {codeCount ?? 0}개</span></h1>
       </div>
       <DbUpload />
+      <div className="card tint small" style={{ lineHeight: 1.8 }}>
+        <b>단어 시트 칸</b> (유닛마다 익힐 단어 20개): 유닛 · 순서 · 단어 · 품사 · 뜻 · 예문 · 예문 뜻 · (묶음)<br />
+        예문을 넣으면 학생이 앱 단어 학습에서 눌러서 들어요. 같은 유닛 단어를 다시 올리면 새 목록으로 바뀌어요.
+      </div>
       <div className="tablebox">
         <table className="t">
-          <thead><tr><th>단계 · 유닛</th><th>단어</th><th>배열</th><th>틀린 표현</th><th>한글→영어</th><th>대답</th><th>확인 테스트</th><th>복습 · 점검용</th><th>학생 화면</th></tr></thead>
+          <thead><tr><th>단계 · 유닛</th><th>단어</th><th>배열</th><th>틀린 표현</th><th>한글→영어</th><th>확인 테스트</th><th>점검용</th><th>학생 화면</th></tr></thead>
           <tbody>
             {units.map((u) => (
               <tr key={u.id}>
                 <td><b>{u.id} {u.title}</b> <span className="small muted">{u.stage}</span></td>
                 <td>{(words ?? []).filter((w) => w.unit_id === u.id).length}</td>
-                <td>{cnt(u.id, "arrange")}</td><td>{cnt(u.id, "find")}</td><td>{cnt(u.id, "ko2en")}</td><td>{cnt(u.id, "answer")}</td><td>{cnt(u.id, "test")}</td>
+                <td>{cnt(u.id, "arrange")}</td><td>{cnt(u.id, "find")}</td><td>{cnt(u.id, "ko2en")}</td><td>{cnt(u.id, "test")}</td>
                 <td>{extra(u.id)}</td>
                 <td>{u.status === "published" ? <span className="chip">공개</span> : <span className="chip gray">준비 중 · 잠김</span>}</td>
               </tr>
             ))}
-            {!units.length && <tr><td colSpan={9} className="muted">아직 문항이 없어요. 위에서 엑셀 파일을 올려 주세요.</td></tr>}
+            {!units.length && <tr><td colSpan={8} className="muted">아직 문항이 없어요. 위에서 엑셀 파일을 올려 주세요.</td></tr>}
           </tbody>
         </table>
       </div>

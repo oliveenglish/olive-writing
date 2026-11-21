@@ -12,6 +12,7 @@ export type Profile = {
   start_unit: string | null;
   memo: string | null;
   ai_autosend: boolean | null;
+  class_days: number[] | null;
   last_seen_at: string | null;
   created_at: string;
 };

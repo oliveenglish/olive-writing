@@ -15,7 +15,7 @@ export default function DbUpload() {
       <label className="card col" style={{ border: "2px dashed var(--done)", alignItems: "center", justifyContent: "center", textAlign: "center", cursor: "pointer", minHeight: 220 }}>
         <div style={{ fontSize: 36 }}>📄</div>
         <b>{file ? file.name : "엑셀 파일 고르기"}</b>
-        <span className="small muted">문항 DB 엑셀 전체를 올리면 바뀐 줄만 반영해요</span>
+        <span className="small muted">문항 DB 엑셀 전체를 올리면 바뀐 줄만 반영해요<br />유닛별 단어만 있는 엑셀('단어' 시트)도 돼요</span>
         <input type="file" accept=".xlsx" hidden onChange={async (e) => {
           const f = e.target.files?.[0] ?? null;
           setFile(f); setSum(null); setMsg(null);
@@ -39,6 +39,11 @@ export default function DbUpload() {
               <div className={`card ${sum.problems.length ? "warn" : "tint"}`}><div className="label">확인 필요</div><div className="big">{sum.problems.length}</div></div>
             </div>
             <div className="small muted">전체: 유닛 {sum.counts.units} · 설명 카드 {sum.counts.cards} · 단어 {sum.counts.words} · 문항 {sum.counts.items} · 오류 코드 {sum.counts.codes} · 점검 소재 {sum.counts.topics}</div>
+            {sum.notes.length > 0 && (
+              <div className="card tint small" style={{ lineHeight: 1.8 }}>
+                {sum.notes.map((p, k) => <div key={k}>· {p}</div>)}
+              </div>
+            )}
             {sum.problems.length > 0 && (
               <div className="card warn small" style={{ lineHeight: 1.8, maxHeight: 200, overflow: "auto" }}>
                 {sum.problems.map((p, k) => <div key={k}>· {p}</div>)}

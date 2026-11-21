@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireTeacher } from "@/lib/auth";
 import { db } from "@/lib/supabase";
 import { myStudents } from "@/lib/teacher";
-import { allUnits, position, weaknesses } from "@/lib/data";
+import { allUnits, planState, position, weaknesses } from "@/lib/data";
 import MakeStudent from "@/components/MakeStudent";
 import { headers } from "next/headers";
 import { addDays, iso, todayKST, weekStart, kst } from "@/lib/dates";
@@ -17,7 +17,7 @@ export default async function Dashboard() {
   const [att, subs, fails, weekly] = ids.length
     ? await Promise.all([
         db().from("attempts").select("student_id,correct,created_at").in("student_id", ids).gte("created_at", ws.toISOString()),
-        db().from("submissions").select("student_id,kind").in("student_id", ids).eq("status", "submitted"),
+        db().from("submissions").select("student_id,kind,page").in("student_id", ids).eq("status", "submitted"),
         db().from("unit_progress").select("student_id,unit_id,fails_in_row").in("student_id", ids).gte("fails_in_row", 2),
         db().from("weekly_runs").select("*").in("student_id", ids).eq("week_start", iso(ws)),
       ])
@@ -28,16 +28,19 @@ export default async function Dashboard() {
       const g = a.filter((x) => x.correct !== null);
       const pos = await position(s.id);
       const weak = await weaknesses(s.id);
+      const ps = pos.type === "unit" ? await planState(s.id, pos.unit.id) : null;
+      const plan = ps ? { done: ps.filter((x) => x.done).length, total: ps.length, warmup: ps.find((x) => x.key === "warmup")?.score ?? null } : null;
       const w = (weekly.data ?? []).find((x) => x.student_id === s.id);
       const days = new Set(a.map((x) => kst(x.created_at).slice(0, 10))).size;
       const fail = (fails.data ?? []).find((x) => x.student_id === s.id);
       const pend = (subs.data ?? []).filter((x) => x.student_id === s.id).length;
       const inactive = !s.last_seen_at || new Date(s.last_seen_at) < addDays(todayKST(), -2);
-      return { s, pos, weak, w, days, acc: g.length ? Math.round((g.filter((x) => x.correct).length / g.length) * 100) : null, fail, pend, inactive };
+      return { s, pos, plan, weak, w, days, acc: g.length ? Math.round((g.filter((x) => x.correct).length / g.length) * 100) : null, fail, pend, inactive };
     })
   );
-  const pending = (subs.data ?? []).length;
-  const finals = (subs.data ?? []).filter((x) => x.kind === "final").length;
+  const isCheck = (x: { kind: string; page?: string | null }) => x.kind === "ws" && x.page !== "p9";
+  const pending = (subs.data ?? []).filter((x) => !isCheck(x)).length;
+  const checks = (subs.data ?? []).filter(isCheck).length;
   const alerts = rows.filter((r) => r.fail);
   const units = (await allUnits()).map((u) => ({ id: u.id, title: u.title, stage: u.stage }));
   const host = headers().get("host");
@@ -53,7 +56,10 @@ export default async function Dashboard() {
         <Link href="/teacher/tasks" className="btn ghost sm">+ 추가 과제 내기</Link>
       </div>
       <div className="grid4" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
-        <Link href="/teacher/grading" className="card" style={{ textDecoration: "none" }}><div className="label">첨삭 대기</div><div className="big">{pending}</div><div className="small muted">최종 점검 {finals}</div></Link>
+        <div className="card row" style={{ gap: 24 }}>
+          <Link href="/teacher/grading" style={{ textDecoration: "none" }}><div className="label">✏️ 첨삭 대기 (9쪽 · 글)</div><div className="big">{pending}</div></Link>
+          <Link href="/teacher/grading?tab=check" style={{ textDecoration: "none" }}><div className="label">📷 사진 확인 대기</div><div className="big">{checks}</div></Link>
+        </div>
         <div className={`card ${alerts.length ? "warn" : ""}`}><div className="label">알림 · 2번 연속 미통과</div><div className="big" style={alerts.length ? { color: "var(--red2)" } : {}}>{alerts.length}</div><div className="small">{alerts.map((r) => `${r.s.name} · ${r.fail?.unit_id}`).join(", ")}</div></div>
         <div className="card"><div className="label">이번 주 공부한 학생</div><div className="big">{activeRate}%</div><div className="small muted">2일 이상 안 들어온 학생 {rows.filter((r) => r.inactive).length}명</div></div>
       </div>
@@ -61,10 +67,10 @@ export default async function Dashboard() {
         <table className="t">
           <thead><tr><th>학생</th><th>현재 위치</th><th>이번 주 공부한 날</th><th>정답률</th><th>자주 틀리는 것</th><th>주간 점검</th><th>상태</th></tr></thead>
           <tbody>
-            {rows.map(({ s, pos, weak, w, days, acc, fail, pend, inactive }) => (
+            {rows.map(({ s, pos, plan, weak, w, days, acc, fail, pend, inactive }) => (
               <tr key={s.id}>
                 <td><Link href={`/teacher/students/${s.id}`} style={{ fontWeight: 800, textDecoration: "none" }}>{s.name}</Link> <span className="small muted">{s.grade}</span></td>
-                <td>{pos.type === "unit" ? `${pos.unit.id} ${pos.unit.title}` : pos.type === "final" ? `${pos.stage} · 최종 점검` : pos.type === "waiting" ? "다음 유닛 준비 중" : "완료"}</td>
+                <td>{pos.type === "unit" ? `${pos.unit.id} ${pos.unit.title}` : pos.type === "waiting" ? "다음 유닛 준비 중" : "완료"}{plan && <div className="small muted">이번 주 할 일 {plan.done} / {plan.total}{plan.warmup ? ` · Warming Up ${plan.warmup}` : ""}</div>}</td>
                 <td>{days}일</td>
                 <td><b style={acc !== null && acc < 65 ? { color: "var(--red2)" } : {}}>{acc === null ? "—" : `${acc}%`}</b></td>
                 <td>{weak.slice(0, 2).map((x) => x.name).join(" · ") || "—"}</td>
