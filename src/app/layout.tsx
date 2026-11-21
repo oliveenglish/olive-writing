@@ -10,8 +10,8 @@ export const metadata: Metadata = {
   description: DESC,
   manifest: "/manifest.webmanifest",
   // 카톡 · 문자 링크 미리보기 (이미지는 public/og.png, 1200×630)
-  openGraph: { type: "website", url: "/", siteName: TITLE, title: TITLE, description: DESC, images: [{ url: "/og.png", width: 1200, height: 630, alt: TITLE }], locale: "ko_KR" },
-  twitter: { card: "summary_large_image", title: TITLE, description: DESC, images: ["/og.png"] },
+  openGraph: { type: "website", url: "/", siteName: TITLE, title: TITLE, description: DESC, images: [{ url: "/og.png?v=2", width: 1200, height: 630, alt: TITLE }], locale: "ko_KR" },
+  twitter: { card: "summary_large_image", title: TITLE, description: DESC, images: ["/og.png?v=2"] },
 };
 export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#4C6B1F" };
 
