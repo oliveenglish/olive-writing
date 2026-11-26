@@ -2,8 +2,7 @@ import { requireStudent } from "@/lib/auth";
 import { unitOf } from "@/lib/progress";
 import { COMMON, folderName, isFresh, materialUrl, materialsFor } from "@/lib/materials";
 import { getUnit } from "@/lib/content";
-import SubTop from "@/components/SubTop";
-import StudentNav from "@/components/StudentNav";
+import StudentShell from "@/components/StudentShell";
 
 export const dynamic = "force-dynamic";
 
@@ -20,13 +19,11 @@ export default async function MaterialsPage() {
     return rank(a) - rank(b);
   });
   return (
-    <div className="app wide">
-      <SubTop back="/student" small="쌤이 올린 워크북 · 자료" title="교재 폴더" />
-      <StudentNav on="folder" fresh={mats.filter(isFresh).length} />
-      <main className="main">
-        {!mats.length && <div className="card muted">아직 올라온 자료가 없어요.</div>}
+    <StudentShell me={me} on="folder" freshFiles={mats.filter(isFresh).length}>
+      <header className="shead"><h1>교재 폴더</h1></header>
+        {!mats.length && <div className="scard muted">아직 올라온 자료가 없어요.</div>}
         {folders.map((f) => (
-          <section key={f} className="card col">
+          <section key={f} className="scard col">
             <div className="row" style={{ justifyContent: "space-between" }}>
               <b style={{ fontSize: 17, color: "var(--head)" }}>{folderName(f)}</b>
               {f === unit.id && <span className="chip">지금 하는 유닛</span>}
@@ -44,7 +41,6 @@ export default async function MaterialsPage() {
             </div>
           </section>
         ))}
-      </main>
-    </div>
+    </StudentShell>
   );
 }

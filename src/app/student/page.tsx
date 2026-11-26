@@ -2,12 +2,10 @@ import Link from "next/link";
 import { requireStudent } from "@/lib/auth";
 import { checksOf, feedbackText, guideOf, latestProofs, signedUrl, stepStates, unitOf, unseenFeedback } from "@/lib/progress";
 import { getUnit, setCount, wordsOf } from "@/lib/content";
-import { CIRCLED, SENT_ACTS, STEPS, WORD_ACTS, sentKey, wordKey, type StepState } from "@/lib/steps";
-import { embedUrl, isFresh, materialsFor, positionOf } from "@/lib/materials";
-import { logout } from "@/app/actions/auth";
+import { SENT_ACTS, STEPS, WORD_ACTS, sentKey, wordKey, type StepState } from "@/lib/steps";
+import { embedUrl, isFresh, materialsFor } from "@/lib/materials";
 import { ICheck } from "@/components/Icons";
-import BridgeMark from "@/components/BridgeMark";
-import StudentNav from "@/components/StudentNav";
+import StudentShell from "@/components/StudentShell";
 import VideoDone from "@/components/VideoDone";
 
 export const dynamic = "force-dynamic";
@@ -26,7 +24,6 @@ export default async function StudentHome() {
   const st = new Map(states.map((s) => [s.n, s]));
   const done = states.filter((s) => s.status === "done").length;
   const next = states.find((s) => s.status !== "done" && s.status !== "wait" && s.status !== "locked")?.n;
-  const pos = positionOf(unit);
   const sets = setCount(unit.id);
   const totalWords = wordsOf(unit.id).length;
   const p5 = proofs.get(5);
@@ -52,13 +49,14 @@ export default async function StudentHome() {
     if (s.status === "doing") return <span className="go">이어서</span>;
     return <span className={s.n === next ? "go" : "go ghost"}>하기</span>;
   };
+  const WHERE: Record<string, string> = { 앱: "w-app", 워크북: "w-book", 영상: "w-video", 첨삭: "w-fb" };
   const row = (s: StepState) => {
     const step = STEPS[s.n - 1];
     const cls = `task ${s.status === "done" ? "done" : s.status === "again" || s.status === "new" ? "again" : s.status === "locked" ? "locked" : s.n === next ? "next" : ""}`;
     const inner = (
       <>
         <span className="num">{s.status === "done" ? <ICheck /> : s.n}</span>
-        <span className="where">{step.where}</span>
+        <span className={`where ${WHERE[step.where]}`}>{step.where}</span>
         <span style={{ flex: 1, minWidth: 0 }}>
           <span className="tt">{step.title}{s.fresh && <span className="newdot">NEW</span>}</span>
           <span className="nn">{s.note || step.sub}</span>
@@ -73,28 +71,16 @@ export default async function StudentHome() {
   const setDone = (prefix: "w" | "s", set: number) =>
     (prefix === "w" ? WORD_ACTS : SENT_ACTS).filter((a) => checks.has(prefix === "w" ? wordKey(set, a.key) : sentKey(set, a.key))).length;
 
+  const now = states.find((x) => x.status !== "done")?.n ?? 7;
   return (
-    <div className="app wide">
-      <header className="hero">
-        <div className="row" style={{ justifyContent: "space-between" }}>
-          <span className="row" style={{ gap: 8, fontSize: 14, fontWeight: 800, color: "#e3edcb" }}><BridgeMark width={40} color="#e3edcb" post="#A9C46C" />올리브 브릿지 라이팅</span>
-          <form action={logout} className="row" style={{ gap: 8 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, background: "rgba(255,255,255,0.16)", borderRadius: 999, padding: "4px 12px" }}>{me.nickname || me.name}</span>
-            <button className="btn ghost sm" style={{ minHeight: 32, padding: "0 10px", fontSize: 12 }}>나가기</button>
-          </form>
+    <StudentShell me={me} on="home" done={done} freshFiles={newMats.length}>
+      <header className="shead">
+        <div className="col" style={{ gap: 4 }}>
+          <span className="small muted">{unit.id} · {unit.topic}</span>
+          <h1>안녕, {me.nickname || me.name}! 오늘 할 과제를 확인해요</h1>
         </div>
-        <Link href="/student/map" className="sub" style={{ color: "#e3edcb", textDecoration: "none" }}>
-          내 위치 · {unit.stage} ({pos.stageNo} / {pos.stageTotal}단계) · Unit {pos.unitNo} / {pos.unitTotal}
-        </Link>
-        <h1>{unit.id} · {unit.title}<span style={{ fontWeight: 500, fontSize: "0.7em", color: "#e3edcb" }}> · {unit.topic}</span></h1>
-        <div className="row" style={{ flexWrap: "nowrap" }}>
-          <div className="bar"><span style={{ width: `${Math.round((done / 7) * 100)}%` }} /></div>
-          <b style={{ fontSize: 14 }}>{done} / 7</b>
-        </div>
+        <span className="spill">{unit.id} · 7단계 중 {now}단계</span>
       </header>
-      <StudentNav on="home" fresh={newMats.length} />
-
-      <main className="main">
         {fresh.length > 0 && (
           <section className="notice">
             <div className="row" style={{ gap: 8, fontWeight: 900, color: "var(--head)" }}>
@@ -116,27 +102,28 @@ export default async function StudentHome() {
         )}
 
         {/* 공지: 공부 순서 */}
-        <section className="card col howto">
-          <div className="row" style={{ gap: 8 }}>
-            <span className="chip" style={{ background: "var(--olive)", color: "#fff" }}>공지</span>
-            <b style={{ fontSize: 17, color: "var(--head)" }}>한 유닛은 이 순서로 공부해요</b>
+        <section className="scard col">
+          <div className="row" style={{ gap: 10 }}>
+            <span className="spill teal">공지</span>
+            <h2 className="sh2">한 유닛은 이 순서로 공부해요</h2>
+            <span className="small muted">앞 단계를 끝내야 다음 단계가 의미 있어요</span>
           </div>
           <ol className="howlist">
             {STEPS.map((s) => (
-              <li key={s.n}>
-                <b className="hn">{s.n}</b>
-                <span><b>{s.title}</b><span className="small muted"> · {s.rule}</span></span>
+              <li key={s.n} className={WHERE[s.where]}>
+                <b className="hw">{s.n} {s.where}</b>
+                <b className="ht">{s.title.replace("앱 ", "").replace("워크북 ", "")}</b>
+                <span className="hr">{s.rule}</span>
               </li>
             ))}
           </ol>
-          <div className="small muted">앞 단계를 끝내야 다음 단계가 열리는 곳도 있어요 (④는 영상 뒤, ⑥은 첨삭이 온 뒤, ⑦은 첨삭을 확인한 뒤).</div>
         </section>
 
         {/* 과제 목록 */}
-        <section className="col" style={{ gap: 8 }}>
+        <section className="scard col">
           <div className="row" style={{ justifyContent: "space-between" }}>
-            <b style={{ fontSize: 17, color: "var(--head)" }}>과제 목록 · {unit.id}</b>
-            <span className="small muted">해야 할 것 {7 - done} · 완료 {done}</span>
+            <h2 className="sh2">과제 목록 · {unit.id}</h2>
+            <span className="row" style={{ gap: 6 }}><span className="spill dark">해야 할 과제 {7 - done}</span><span className="spill line">완료 {done}</span></span>
           </div>
           <div className="tasks">{states.map(row)}</div>
           {done === 7 && <div className="bubble ok">이번 유닛 끝! 쌤이 다시 쓰기를 확인하면 다음 유닛이 열려요.</div>}
@@ -144,8 +131,8 @@ export default async function StudentHome() {
 
         {/* 한 화면 학습 칸 */}
         <div className="homegrid">
-          <section className="card col">
-            <div className="row" style={{ justifyContent: "space-between" }}><h2 style={{ fontSize: 18 }}>① 단어 학습</h2><span className="small muted">단어 {totalWords}개</span></div>
+          <section className="scard col">
+            <div className="row" style={{ justifyContent: "space-between" }}><h2 className="sh2">① 단어 학습</h2><span className="small muted">단어 {totalWords}개</span></div>
             {Array.from({ length: sets }, (_, i) => i + 1).map((s) => (
               <div key={s} className="row" style={{ flexWrap: "nowrap" }}>
                 <span className="small" style={{ width: 52, fontWeight: 800 }}>Set {s}</span>
@@ -157,8 +144,8 @@ export default async function StudentHome() {
             <Link href="/student/words" className="btn sm">{st.get(1)?.status === "done" ? "다시 보기" : "단어 학습하러 가기"}</Link>
           </section>
 
-          <section id="video" className="card col">
-            <div className="row" style={{ justifyContent: "space-between" }}><h2 style={{ fontSize: 18 }}>③ 영상 강의</h2>{guide?.video_title && <span className="small muted">{guide.video_title}</span>}</div>
+          <section id="video" className="scard col">
+            <div className="row" style={{ justifyContent: "space-between" }}><h2 className="sh2">③ 영상 강의</h2>{guide?.video_title && <span className="small muted">{guide.video_title}</span>}</div>
             {video ? (
               <div className="vid"><iframe src={video} title={guide?.video_title || "영상 강의"} allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowFullScreen /></div>
             ) : guide?.video_url ? (
@@ -170,8 +157,8 @@ export default async function StudentHome() {
             {guide?.video_url && <VideoDone unitId={unit.id} done={st.get(3)?.status === "done"} />}
           </section>
 
-          <section className="card col">
-            <div className="row" style={{ justifyContent: "space-between" }}><h2 style={{ fontSize: 18 }}>④ 문장 연습</h2><span className="small muted">10문장씩</span></div>
+          <section className="scard col">
+            <div className="row" style={{ justifyContent: "space-between" }}><h2 className="sh2">④ 문장 연습</h2><span className="small muted">10문장씩</span></div>
             {Array.from({ length: sets }, (_, i) => i + 1).map((s) => (
               <div key={s} className="row" style={{ flexWrap: "nowrap" }}>
                 <span className="small" style={{ width: 52, fontWeight: 800 }}>Set {s}</span>
@@ -187,8 +174,8 @@ export default async function StudentHome() {
             )}
           </section>
 
-          <section className="card col">
-            <div className="row" style={{ justifyContent: "space-between" }}><h2 style={{ fontSize: 18 }}>숙제 안내</h2><span className="small muted">⑤ 숙제 · 내 글 쓰기</span></div>
+          <section className="scard col">
+            <div className="row" style={{ justifyContent: "space-between" }}><h2 className="sh2">숙제 안내</h2><span className="small muted">⑤ 숙제 · 내 글 쓰기</span></div>
             <div className="card warn" style={{ color: "var(--ink)", whiteSpace: "pre-wrap", lineHeight: 1.7, fontSize: 15 }}>
               {guide?.homework || "워크북 숙제와 내 글 쓰기를 하고, 쪽마다 사진을 찍어 ⑤에 올려요.\n마감 날 밤 10시까지 올리면 쌤이 첨삭해 줘요."}
             </div>
@@ -196,8 +183,8 @@ export default async function StudentHome() {
             <Link href="/student/proof/5" className="btn sm">⑤ 숙제 사진 올리기</Link>
           </section>
 
-          <section className="card col span2">
-            <div className="row" style={{ justifyContent: "space-between" }}><h2 style={{ fontSize: 18 }}>과제 제출 · 쌤 첨삭</h2>{p5?.status === "returned" && !p5.seen && <span className="chip red">첨삭 도착</span>}</div>
+          <section className="scard col span2">
+            <div className="row" style={{ justifyContent: "space-between" }}><h2 className="sh2">과제 제출 · 쌤 첨삭</h2>{p5?.status === "returned" && !p5.seen && <span className="chip red">첨삭 도착</span>}</div>
             {!p5 ? (
               <div className="small muted">⑤ 숙제 사진을 올리면 쌤이 빨간 펜으로 첨삭해요. 첨삭이 오면 여기서 내 사진과 나란히 볼 수 있어요.</div>
             ) : p5.status === "submitted" ? (
@@ -228,7 +215,6 @@ export default async function StudentHome() {
             )}
           </section>
         </div>
-      </main>
-    </div>
+    </StudentShell>
   );
 }

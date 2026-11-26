@@ -1,8 +1,7 @@
 import { requireStudent } from "@/lib/auth";
 import { unitOf } from "@/lib/progress";
 import { positionOf } from "@/lib/materials";
-import SubTop from "@/components/SubTop";
-import StudentNav from "@/components/StudentNav";
+import StudentShell from "@/components/StudentShell";
 
 export const dynamic = "force-dynamic";
 
@@ -12,11 +11,9 @@ export default async function MapPage() {
   const unit = unitOf(me);
   const pos = positionOf(unit);
   return (
-    <div className="app wide">
-      <SubTop back="/student" small={`${unit.stage} · ${pos.stageNo} / ${pos.stageTotal}단계`} title="내 위치 · STEP 지도" />
-      <StudentNav on="map" />
-      <main className="main">
-        <section className="card col">
+    <StudentShell me={me} on="map">
+      <header className="shead"><h1>내 위치 · STEP 지도</h1></header>
+        <section className="scard col">
           <b style={{ fontSize: 17, color: "var(--head)" }}>전체 단계</b>
           <div className="stagegrid">
             {pos.stages.map((s) => (
@@ -27,7 +24,7 @@ export default async function MapPage() {
             ))}
           </div>
         </section>
-        <section className="card col">
+        <section className="scard col">
           <div className="row" style={{ justifyContent: "space-between" }}>
             <b style={{ fontSize: 17, color: "var(--head)" }}>{unit.stage} 유닛</b>
             <span className="small muted">Unit {pos.unitNo} / {pos.unitTotal} 하는 중</span>
@@ -48,7 +45,6 @@ export default async function MapPage() {
             })}
           </div>
         </section>
-      </main>
-    </div>
+    </StudentShell>
   );
 }
