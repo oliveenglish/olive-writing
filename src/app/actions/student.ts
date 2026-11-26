@@ -5,9 +5,9 @@ import { db, BUCKET } from "@/lib/supabase";
 import { getUnit } from "@/lib/content";
 import { latestProofs } from "@/lib/progress";
 
-const KEY = /^(w\d+-(flash|match|word|meaning)|s\d+-(shadow|chunk))$/;
+const KEY = /^(w\d+-(flash|match|word|meaning)|s\d+-(shadow|chunk)|video)$/;
 
-/** 앱 활동을 마치면 체크 (단어 학습 · 문장 연습) */
+/** 앱 활동을 마치면 체크 (단어 학습 · 문장 연습 · ③ 영상 강의 다 봤어요) */
 export async function saveCheck(unitId: string, key: string, score?: number, total?: number) {
   const me = await requireStudent();
   if (!KEY.test(key) || !getUnit(unitId)) return;
@@ -17,16 +17,6 @@ export async function saveCheck(unitId: string, key: string, score?: number, tot
       { student_id: me.id, unit_id: unitId, key, score: score ?? null, total: total ?? null, done_at: new Date().toISOString() },
       { onConflict: "student_id,unit_id,key" }
     );
-  revalidatePath("/student");
-}
-
-/** ③ · ⑥ 수업 참석: 학생이 체크 · 체크 풀기 */
-export async function toggleClass(unitId: string, key: "class1" | "class2") {
-  const me = await requireStudent();
-  if (key !== "class1" && key !== "class2") return;
-  const { data: row } = await db().from("app_checks").select("key").eq("student_id", me.id).eq("unit_id", unitId).eq("key", key).maybeSingle();
-  if (row) await db().from("app_checks").delete().eq("student_id", me.id).eq("unit_id", unitId).eq("key", key);
-  else await db().from("app_checks").insert({ student_id: me.id, unit_id: unitId, key });
   revalidatePath("/student");
 }
 
@@ -55,7 +45,7 @@ export async function uploadProof(unitId: string, step: number, fd: FormData): P
   const { error: e2 } = await db().from("proofs").insert({ student_id: me.id, unit_id: unitId, step, photo_path: path });
   if (e2) return { ok: false, message: "저장하지 못했어요: " + e2.message };
   revalidatePath("/student");
-  return { ok: true, message: step === 5 ? "쌤에게 보냈어요! 첨삭이 오면 ⑦이 열려요." : "쌤에게 보냈어요!" };
+  return { ok: true, message: step === 5 ? "쌤에게 보냈어요! 첨삭이 오면 ⑥에서 확인해요." : "쌤에게 보냈어요!" };
 }
 
 /** 첨삭 · 확인 결과를 봤어요 */

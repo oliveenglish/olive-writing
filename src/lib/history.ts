@@ -15,6 +15,7 @@ export type UnitHistory = {
   accuracy: number | null;
   class1: string | null;
   class2: string | null;
+  video: string | null;
   proofs: HistProof[];
   from: string | null;
   to: string | null;
@@ -70,6 +71,7 @@ export async function historyOf(studentId: string, currentUnit: string): Promise
       accuracy: sum[1] ? Math.round((sum[0] / sum[1]) * 100) : null,
       class1: cs.find((c) => c.key === "class1")?.done_at ?? null,
       class2: cs.find((c) => c.key === "class2")?.done_at ?? null,
+      video: cs.find((c) => c.key === "video" || c.key === "class1")?.done_at ?? null,
       proofs: ps,
       from: times[0] ?? null,
       to: times[times.length - 1] ?? null,

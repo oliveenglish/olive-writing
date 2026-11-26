@@ -216,3 +216,59 @@ table.t td { padding: 11px 12px; border-top: 1px solid #e6e9df; vertical-align: 
 .histstats b { font-size: 15px; color: var(--head); }
 .histgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 12px; }
 @media (min-width: 900px) { .histgrid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); } }
+
+/* ───── 새 학생 홈 (과제 목록 · 한 화면) ───── */
+.snav { display: flex; gap: 4px; padding: 8px 12px; background: #fff; border-bottom: 1px solid var(--line); overflow-x: auto; position: sticky; top: 0; z-index: 5; }
+.snav a { flex: none; padding: 9px 14px; border-radius: 999px; font-size: 14px; font-weight: 800; color: var(--muted); text-decoration: none; display: inline-flex; align-items: center; }
+.snav a.on { background: var(--olive); color: #fff; }
+.howto { border: 2px solid var(--tint); }
+.howlist { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: 1fr; gap: 6px; }
+.howlist li { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; line-height: 1.5; }
+.howlist .hn { flex: none; width: 24px; height: 24px; border-radius: 8px; background: var(--tint); color: var(--olive2); font-size: 12px; display: flex; align-items: center; justify-content: center; }
+.tasks { display: flex; flex-direction: column; gap: 6px; }
+.task { display: flex; align-items: center; gap: 10px; background: #fff; border: 2px solid var(--line); border-radius: 14px; padding: 10px 12px; text-decoration: none; color: var(--ink); }
+.task .tt { display: block; font-size: 15px; font-weight: 800; }
+.task .nn { display: block; font-size: 12px; color: var(--muted); }
+.task .where { flex: none; font-size: 11px; font-weight: 800; color: var(--olive2); background: var(--soft); border-radius: 999px; padding: 3px 8px; }
+.task.done { opacity: 0.7; }
+.task.done .num { background: var(--olive); border-color: var(--olive); color: #fff; }
+.task.next { border-color: var(--olive); }
+.task.next .num { border-color: var(--olive); color: var(--olive); }
+.task.again { background: var(--redbg); border-color: #f3c4c4; }
+.task.again .nn { color: var(--red); font-weight: 700; }
+.task.locked { opacity: 0.55; }
+.homegrid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+.vid { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; background: #111; }
+.vid iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.file { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 14px; border: 1px solid var(--line); background: #fff; text-decoration: none; color: var(--ink); }
+.drop { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 100px; border: 2px dashed var(--line2); border-radius: 14px; background: var(--soft); cursor: pointer; text-align: center; padding: 12px; }
+.stagegrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
+.stage { border-radius: 12px; padding: 10px 12px; background: var(--soft); color: var(--muted); display: flex; flex-direction: column; gap: 2px; }
+.stage b { font-size: 15px; }
+.stage span { font-size: 12px; }
+.stage.done { background: var(--olive); color: #fff; }
+.stage.now { background: var(--head); color: #fff; outline: 3px solid var(--lime); outline-offset: 2px; }
+.unitlist { display: flex; flex-direction: column; gap: 6px; }
+.unitrow { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--soft); font-size: 14px; }
+.unitrow .un { flex: none; width: 28px; height: 28px; border-radius: 8px; background: #fff; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 13px; color: var(--muted); }
+.unitrow.done { background: var(--tint); }
+.unitrow.done .un { background: var(--olive); color: #fff; }
+.unitrow.now { background: #fff; border: 2px solid var(--olive); }
+.unitrow.now .un { background: var(--head); color: #fff; }
+@media (min-width: 900px) {
+  .snav { padding: 10px 24px; }
+  .howlist { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .howlist li { flex-direction: column; gap: 6px; background: var(--soft); border-radius: 12px; padding: 10px; }
+  .homegrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+  .homegrid .span2 { grid-column: 1 / -1; }
+}
+
+/* 쌤 화면 추가 */
+.tnav .soon { padding: 11px 14px; border-radius: 12px; color: #8f9c78; font-weight: 700; font-size: 14px; }
+.statgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.stat { text-decoration: none; color: var(--ink); gap: 4px; }
+.stat b { font-size: 28px; color: var(--head); }
+.folders { flex: 1 1 220px; max-width: 260px; gap: 2px; padding: 12px; }
+.folders a { display: flex; justify-content: space-between; padding: 8px 10px; border-radius: 10px; text-decoration: none; color: var(--ink); font-size: 14px; }
+.folders a.on { background: var(--olive); color: #fff; font-weight: 800; }
+.folders summary { cursor: pointer; padding: 8px 10px; font-weight: 800; font-size: 14px; color: var(--head); }

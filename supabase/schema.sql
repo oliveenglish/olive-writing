@@ -67,11 +67,40 @@ create table if not exists proofs (
 );
 create index if not exists proofs_student on proofs(student_id, unit_id, step, created_at desc);
 
+-- ③ 영상 강의 · 숙제 안내 (유닛마다 하나 · 쌤 '영상 강의' 메뉴에서 넣어요)
+create table if not exists unit_guides (
+  unit_id text primary key,            -- 예: S1-Unit 11
+  teacher_id uuid,
+  video_url text,                      -- YouTube 일부 공개 · Vimeo 링크
+  video_title text,
+  video_note text,                     -- 학생에게 보일 한 줄 설명
+  homework text,                       -- 학생 홈 '숙제 안내' 칸
+  must_watch boolean default true,     -- 영상을 다 봐야 ④ 문장 연습이 열려요
+  updated_at timestamptz default now()
+);
+
+-- 교재 폴더 (쌤 '교재 폴더' 메뉴에서 올려요 · 파일은 materials 저장소)
+create table if not exists materials (
+  id uuid primary key default gen_random_uuid(),
+  teacher_id uuid not null,
+  folder text not null,                -- 유닛 ID (예: S1-Unit 11) 또는 common (공통 자료)
+  title text not null,                 -- 원래 파일 이름
+  file_path text not null,
+  size bigint,
+  visible text default 'all' check (visible in ('all','teacher','some')),  -- 전체 · 쌤만 · 고른 학생
+  student_ids uuid[] default '{}',
+  is_new boolean default true,         -- 학생 화면 NEW 표시 (2주)
+  created_at timestamptz default now()
+);
+create index if not exists materials_teacher on materials(teacher_id, folder, created_at desc);
+
 -- RLS 켜기 (정책 없음 = 사이트 서버만 접근)
 alter table classes enable row level security;
 alter table profiles enable row level security;
 alter table app_checks enable row level security;
 alter table proofs enable row level security;
+alter table unit_guides enable row level security;
+alter table materials enable row level security;
 
 -- 서버(관리자 키)에 표 사용 권한
 grant usage on schema public to service_role;
@@ -82,4 +111,8 @@ alter default privileges in schema public grant all on sequences to service_role
 
 -- 사진 저장소 (비공개)
 insert into storage.buckets (id, name, public) values ('submissions', 'submissions', false)
+on conflict (id) do nothing;
+
+-- 교재 폴더 저장소 (비공개 · 학생은 1시간짜리 링크로 열어요)
+insert into storage.buckets (id, name, public) values ('materials', 'materials', false)
 on conflict (id) do nothing;

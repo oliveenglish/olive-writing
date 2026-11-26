@@ -57,7 +57,7 @@ export default async function Proofs({ searchParams }: { searchParams: { done?: 
       {!done && (
         <div className="card tint small" style={{ lineHeight: 1.7 }}>
           <b>② 워크북 단어 학습 · ⑦ 다시 쓰기</b>는 ✓ 확인 / ↺ 다시 써 와요를 눌러요. ⑦을 ✓ 확인하면 다음 유닛이 열려요. ⑦이 또 틀렸으면 🖍️ 빨간 펜으로 첨삭해서 다시 써 오게 해요.<br />
-          <b>⑤ 쌤 숙제</b>는 사진 위에 빨간 펜으로 첨삭해요. 학생 화면에 원본과 첨삭본이 나란히 보여요.
+          <b>⑤ 숙제 · 내 글 쓰기</b>는 사진 위에 빨간 펜으로 첨삭해요. 학생 화면에 원본과 첨삭본이 나란히 보여요.
         </div>
       )}
       {cards.length ? (

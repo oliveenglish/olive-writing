@@ -1,7 +1,7 @@
 /** 학생 진행 상황 (서버 전용) */
 import { db, BUCKET } from "./supabase";
 import { firstUnit, getUnit, setCount, type Unit } from "./content";
-import { SENT_ACTS, WORD_ACTS, sentKey, wordKey, type StepState } from "./steps";
+import { SENT_ACTS, VIDEO_KEY, WORD_ACTS, sentKey, wordKey, type StepState } from "./steps";
 
 export type Proof = {
   id: string;
@@ -17,6 +17,23 @@ export type Proof = {
   created_at: string;
   returned_at: string | null;
 };
+
+export type Guide = {
+  unit_id: string;
+  video_url: string | null;
+  video_title: string | null;
+  video_note: string | null;
+  homework: string | null;
+  must_watch: boolean | null;
+  updated_at: string | null;
+};
+
+/** 유닛 안내 (영상 강의 · 숙제 안내) — 쌤 '영상 강의' 메뉴에서 넣어요. 표가 아직 없으면 null */
+export async function guideOf(unitId: string): Promise<Guide | null> {
+  const { data, error } = await db().from("unit_guides").select("*").eq("unit_id", unitId).maybeSingle();
+  if (error) return null;
+  return (data as Guide) ?? null;
+}
 
 /** 학생이 지금 하는 유닛 (쌤이 안 정했으면 첫 유닛) */
 export function unitOf(p: { current_unit: string | null }): Unit {
@@ -38,7 +55,7 @@ export async function latestProofs(studentId: string, unitId: string): Promise<M
 
 /** 7단계 상태 */
 export async function stepStates(studentId: string, unitId: string): Promise<StepState[]> {
-  const [checks, proofs] = await Promise.all([checksOf(studentId, unitId), latestProofs(studentId, unitId)]);
+  const [checks, proofs, guide] = await Promise.all([checksOf(studentId, unitId), latestProofs(studentId, unitId), guideOf(unitId)]);
   const sets = setCount(unitId);
   const count = (keys: string[]) => keys.filter((k) => checks.has(k)).length;
   const wordKeys = Array.from({ length: sets }, (_, i) => WORD_ACTS.map((a) => wordKey(i + 1, a.key))).flat();
@@ -60,24 +77,34 @@ export async function stepStates(studentId: string, unitId: string): Promise<Ste
     if (p.decision === "redo") return { n, status: "again", note: "다시 써서 올려요", fresh };
     return { n, status: "done", note: n === 5 ? "첨삭 완료" : "쌤 확인 ✓", fresh };
   };
-  const cls = (n: number, key: string): StepState => (checks.has(key) ? { n, status: "done", note: "참석" } : { n, status: "todo", note: "" });
 
-  const s7 = proof(7);
+  // ③ 영상 강의: 다 봤어요 (예전 수업 참석 체크 class1도 인정) · 영상이 없으면 건너뛰어요
+  const hasVideo = !!guide?.video_url;
+  const step3: StepState =
+    checks.has(VIDEO_KEY) || checks.has("class1")
+      ? { n: 3, status: "done", note: "다 봤어요" }
+      : hasVideo
+        ? { n: 3, status: "todo", note: guide?.video_title || "" }
+        : { n: 3, status: "done", note: "이번 유닛은 영상이 없어요" };
+
+  // ④ 문장 연습: 영상을 꼭 봐야 하는 유닛이면 영상 뒤에 열려요
+  let step4 = app(4, sentKeys, "s", SENT_ACTS);
+  if (hasVideo && guide?.must_watch !== false && step3.status !== "done" && step4.status === "todo")
+    step4 = { n: 4, status: "locked", note: "영상 강의를 먼저 봐요" };
+
+  // ⑥ 쌤 첨삭 확인: ⑤ 첨삭이 오면 열리고, 첨삭을 열어 보면 끝
   const p5 = proofs.get(5);
-  let step7 = s7;
-  if (s7.status === "todo") {
-    if (!p5 || p5.status !== "returned") step7 = { n: 7, status: "locked", note: "쌤 첨삭이 오면 열려요" };
-    else if (!p5.seen) step7 = { n: 7, status: "new", note: "첨삭 도착!" };
-  }
-  return [
-    app(1, wordKeys, "w", WORD_ACTS),
-    proof(2),
-    cls(3, "class1"),
-    app(4, sentKeys, "s", SENT_ACTS),
-    proof(5),
-    cls(6, "class2"),
-    step7,
-  ];
+  let step6: StepState;
+  if (!p5) step6 = { n: 6, status: "locked", note: "⑤ 숙제를 올리면 쌤이 첨삭해요" };
+  else if (p5.status === "submitted") step6 = { n: 6, status: "locked", note: "쌤이 첨삭 중이에요" };
+  else if (!p5.seen) step6 = { n: 6, status: "new", note: "첨삭 도착! 열어서 확인해요", fresh: true };
+  else step6 = { n: 6, status: "done", note: "확인했어요" };
+
+  // ⑦ 다시 쓰기: 첨삭을 확인한 뒤에 열려요
+  let step7 = proof(7);
+  if (step7.status === "todo" && step6.status !== "done") step7 = { n: 7, status: "locked", note: "첨삭을 확인하면 열려요" };
+
+  return [app(1, wordKeys, "w", WORD_ACTS), proof(2), step3, step4, proof(5), step6, step7];
 }
 
 /** 쌤이 확인 · 첨삭했는데 학생이 아직 안 본 것 (지난 유닛 것도 포함) */

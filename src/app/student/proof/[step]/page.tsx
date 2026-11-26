@@ -12,7 +12,7 @@ export const maxDuration = 30;
 
 const GUIDE: Record<number, string> = {
   2: "워크북에 이번 유닛 단어를 쓰고, 쓴 쪽을 사진으로 찍어 올려요. 글씨가 잘 보이게 밝은 곳에서 찍어요.",
-  5: "쌤이 낸 워크북 숙제를 하고, 쪽마다 한 장씩 사진을 찍어 올려요. 쌤이 빨간 펜으로 첨삭해 줘요.",
+  5: "쌤이 낸 워크북 숙제와 내 글 쓰기를 하고, 쪽마다 한 장씩 사진을 찍어 올려요. 마감 날 밤 10시까지 올리면 쌤이 빨간 펜으로 첨삭해 줘요.",
   7: "쌤 첨삭을 보고 워크북에 다시 쓴 다음 사진을 올려요.",
 };
 
@@ -39,7 +39,7 @@ export default async function ProofPage({ params }: { params: { step: string } }
       <main className="main">
         {step === 7 && (
           locked ? (
-            <div className="card tint">⑤ 쌤 숙제를 올리고 쌤 첨삭이 오면 여기서 볼 수 있어요.</div>
+            <div className="card tint">⑤ 숙제 · 내 글 쓰기를 올리고 쌤 첨삭이 오면 여기서 볼 수 있어요.</div>
           ) : (
             <>
               <div className="grid2">

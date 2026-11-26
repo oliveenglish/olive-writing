@@ -21,7 +21,7 @@ export default async function ProofOne({ params, searchParams }: { params: { id:
       <div>
         <Link href="/teacher/proofs" className="small" style={{ fontWeight: 700 }}>← 인증 · 첨삭 목록</Link>
         <div className="label">{kst(p.created_at).slice(0, 16).replace("T", " ")} 제출</div>
-        <h1 className="title">{st?.name} · {p.unit_id} · {p.step === 5 ? "⑤ 쌤 숙제 첨삭" : p.step === 2 ? "② 워크북 단어 학습" : "⑦ 다시 쓰기"}</h1>
+        <h1 className="title">{st?.name} · {p.unit_id} · {p.step === 5 ? "⑤ 숙제 · 내 글 쓰기 첨삭" : p.step === 2 ? "② 워크북 단어 학습" : "⑦ 다시 쓰기"}</h1>
       </div>
       {(p.step === 5 || (p.step === 7 && searchParams.pen)) && photo ? (
         <MarkupForm proofId={p.id} photoUrl={photo} oldMarkup={markup} oldComment={p.comment} redo={p.step === 7} />

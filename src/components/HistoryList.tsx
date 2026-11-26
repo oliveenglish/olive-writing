@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { UnitHistory, HistProof } from "@/lib/history";
 import { kst } from "@/lib/dates";
 
-const STEP_NAME: Record<number, string> = { 2: "② 워크북 단어", 5: "⑤ 쌤 숙제", 7: "⑦ 다시 쓰기" };
+const STEP_NAME: Record<number, string> = { 2: "② 워크북 단어", 5: "⑤ 숙제 · 내 글", 7: "⑦ 다시 쓰기" };
 const md = (ts: string | null) => (ts ? kst(ts).slice(5, 10).replace("-", "/") : "");
 
 function result(p: HistProof): { text: string; cls: string } {
@@ -37,7 +37,7 @@ export default function HistoryList({ list }: { list: UnitHistory[] }) {
               <div><span>단어 학습</span><b>Set {h.wordSets} / {h.sets}</b></div>
               <div><span>문장 연습</span><b>Set {h.sentSets} / {h.sets}</b></div>
               <div><span>정답률</span><b>{h.accuracy == null ? "—" : `${h.accuracy}%`}</b></div>
-              <div><span>수업 참석</span><b>{[h.class1, h.class2].filter(Boolean).length} / 2</b></div>
+              <div><span>영상 강의</span><b>{h.video ? "봤어요" : "—"}</b></div>
               <div><span>다시 쓰기</span><b>{tries7 ? `${tries7}번` : "—"}</b></div>
             </div>
 

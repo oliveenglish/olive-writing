@@ -6,7 +6,7 @@ import { stepStates, unitOf } from "@/lib/progress";
 import { historyOf } from "@/lib/history";
 import HistoryList from "@/components/HistoryList";
 import { allUnits } from "@/lib/content";
-import { GROUPS, STEPS, dayOf, groupOf } from "@/lib/steps";
+import { CIRCLED, STEPS } from "@/lib/steps";
 import { kst } from "@/lib/dates";
 import { resetPin, saveStudent } from "@/app/actions/teacher";
 
@@ -20,12 +20,11 @@ export default async function StudentDetail({ params }: { params: { id: string }
   const unit = unitOf(s);
   const [states, hist] = await Promise.all([stepStates(s.id, unit.id), historyOf(s.id, unit.id)]);
   const units = allUnits();
-  const group = groupOf(s.class_days);
   const stages = Array.from(new Set(units.map((u) => u.stage)));
   return (
     <>
       <div>
-        <Link href="/teacher" className="small" style={{ fontWeight: 700 }}>← 이번 주 진행</Link>
+        <Link href="/teacher" className="small" style={{ fontWeight: 700 }}>← 학생 진도</Link>
         <h1 className="title">{s.name} <span className="small muted">아이디 {s.username} · 시작 {kst(s.created_at).slice(0, 10)}</span> <a href="#history" className="btn ghost sm" style={{ marginLeft: 8, verticalAlign: "middle" }}>학습 기록 보기 ↓</a></h1>
       </div>
       <div className="side2" style={{ alignItems: "start" }}>
@@ -37,8 +36,7 @@ export default async function StudentDetail({ params }: { params: { id: string }
                 const x = states[st.n - 1];
                 return (
                   <tr key={st.n}>
-                    <td style={{ width: 36 }}><b>{dayOf(st.n, group)}</b></td>
-                    <td>{["", "①", "②", "③", "④", "⑤", "⑥", "⑦"][st.n]} {st.title}</td>
+                    <td>{CIRCLED[st.n]} {st.title}</td>
                     <td className="small">{x.status === "done" ? <span className="ok">✓ {x.note}</span> : x.note || "—"}</td>
                   </tr>
                 );
@@ -58,18 +56,6 @@ export default async function StudentDetail({ params }: { params: { id: string }
                 ))}
               </select>
             </label>
-            <fieldset className="field" style={{ border: "none", padding: 0, margin: 0 }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--head)" }}>수업 반</span>
-              <div className="row" style={{ gap: 6 }}>
-                {GROUPS.map((g) => (
-                  <label key={g.key} className="chip gray" style={{ cursor: "pointer", gap: 6, padding: "10px 14px", fontSize: 14 }}>
-                    <input type="radio" name="group" value={g.key} defaultChecked={group === g.key} required /> {g.label}
-                  </label>
-                ))}
-              </div>
-              {!group && <span className="small" style={{ color: "var(--warnink)" }}>수업 반을 골라 주세요. (지금 요일은 두 반 중 어디에도 맞지 않아요)</span>}
-            </fieldset>
-            <label className="field"><span>이 학생 Zoom 링크 (선택 · 비우면 반 링크)</span><input name="zoom" className="input" style={{ fontSize: 15 }} defaultValue={s.zoom_url ?? ""} placeholder="https://zoom.us/j/..." autoComplete="off" /></label>
             <label className="field"><span>이름</span><input name="name" className="input" defaultValue={s.name} /></label>
             <label className="field"><span>학년</span><input name="grade" className="input" defaultValue={s.grade ?? ""} /></label>
             <label className="field"><span>쌤 메모 (학생에게 안 보여요)</span><textarea name="memo" className="textarea" style={{ fontSize: 15 }} defaultValue={s.memo ?? ""} /></label>

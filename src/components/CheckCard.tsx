@@ -20,7 +20,7 @@ export type ProofCard = {
   markup?: string | null;
 };
 
-const STEP_NAME: Record<number, string> = { 2: "② 워크북 단어 학습", 5: "⑤ 쌤 숙제", 7: "⑦ 다시 쓰기" };
+const STEP_NAME: Record<number, string> = { 2: "② 워크북 단어 학습", 5: "⑤ 숙제 · 내 글 쓰기", 7: "⑦ 다시 쓰기" };
 
 /** 인증 사진 카드: ② · ⑦은 ✓ 확인 / ↺ 다시 써 와요, ⑤는 빨간 펜 첨삭으로 */
 export default function CheckCard({ c }: { c: ProofCard }) {

@@ -55,7 +55,7 @@ export async function makeStudent(_: MakeStudentState, fd: FormData): Promise<Ma
   return { made: { name, username, pin } };
 }
 
-/** 학생 정보 · 유닛 · 수업 요일 · 메모 한 번에 저장 */
+/** 학생 정보 · 유닛 · 메모 한 번에 저장 (아이디 · PIN은 건드리지 않아요) */
 export async function saveStudent(studentId: string, fd: FormData) {
   await requireTeacher();
   const name = String(fd.get("name") || "").trim();
@@ -68,8 +68,11 @@ export async function saveStudent(studentId: string, fd: FormData) {
   if (days) patch.class_days = days;
   if (name) patch.name = name;
   if (unit) patch.current_unit = unit.id;
-  const zoom = cleanUrl(fd.get("zoom"));
-  if (zoom !== false) patch.zoom_url = zoom;
+  // Zoom 칸은 화면에서 뺐어요 (칸이 있을 때만 저장 · 저장된 링크는 그대로 둬요)
+  if (fd.has("zoom")) {
+    const zoom = cleanUrl(fd.get("zoom"));
+    if (zoom !== false) patch.zoom_url = zoom;
+  }
   const { error } = await db().from("profiles").update(patch).eq("id", studentId);
   if (error && "zoom_url" in patch) {
     // Zoom 칸이 아직 DB에 없으면 (schema.sql 다시 실행 전) 나머지만 저장
