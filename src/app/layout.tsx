@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   openGraph: { type: "website", url: "/", siteName: TITLE, title: TITLE, description: DESC, images: [{ url: "/og.png?v=3", width: 1200, height: 630, alt: TITLE }], locale: "ko_KR" },
   twitter: { card: "summary_large_image", title: TITLE, description: DESC, images: ["/og.png?v=3"] },
 };
-export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#4C6B1F" };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#0F2A3D" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

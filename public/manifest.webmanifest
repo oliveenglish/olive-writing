@@ -3,7 +3,7 @@
   "short_name": "올리브 브릿지",
   "start_url": "/student",
   "display": "standalone",
-  "background_color": "#F4F7FB",
-  "theme_color": "#4C6B1F",
+  "background_color": "#F3F6F5",
+  "theme_color": "#0F2A3D",
   "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
 }
