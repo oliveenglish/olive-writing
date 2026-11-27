@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0F2A3D">
+<meta name="robots" content="noindex">
+<title>Monster Writing · 올리브 브릿지 라이팅</title>
+<link rel="icon" href="/icon.svg">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800;900&family=Nunito:wght@700;800;900&display=swap">
+<style>
+/* 브릿지 라이팅과 같은 색: 네이비 #0F2A3D · 틸 #1E8C77 · 민트 #4CC3A8 · 배경 #F3F6F5 */
+:root{--bg:#f3f6f5;--line:#e1e8e6;--line2:#d3dcda;--ink:#13283a;--muted:#5a6d7c;--teal:#1e8c77;--teal2:#0e6b5c;--mint:#4cc3a8;--tint:#ddf1eb;--soft:#eef2f1;--dim:#a9b8b4;--navy:#0f2a3d;--warn:#b4541a;--warnbg:#fff1e6;--warnink:#8a3a0e}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans KR",system-ui,sans-serif}
+button{font:inherit}
+.en{font-family:Nunito,"Noto Sans KR",sans-serif}
+.app{max-width:560px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+@media(min-width:900px){.app{max-width:760px}.hero{border-radius:0 0 22px 22px}}
+.hero{background:var(--navy);color:#fff;padding:20px 20px 18px;display:flex;flex-direction:column;gap:8px}
+.kick{font-size:12px;font-weight:800;letter-spacing:2px;color:#9fd9cc}
+.hero h1{margin:0;color:#fff;font-size:23px;font-weight:900;line-height:1.3}
+.hero .sub{font-size:13px;color:#d6e3ec}
+.bar{height:10px;border-radius:999px;background:rgba(255,255,255,.22);overflow:hidden}
+.bar>span{display:block;height:100%;border-radius:999px;background:var(--mint);transition:width .3s}
+.main{flex:1;padding:16px;display:flex;flex-direction:column;gap:12px}
+.col{display:flex;flex-direction:column;gap:12px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px}
+.label{font-size:12px;font-weight:800;color:var(--muted)}
+.small{font-size:13px}.muted{color:var(--muted)}
+.title{font-size:24px;font-weight:900}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:0 22px;border-radius:16px;border:none;background:var(--teal);color:#fff;font-size:17px;font-weight:800;cursor:pointer;width:100%}
+.btn:disabled{background:var(--dim);cursor:default}
+.btn.ghost{background:#fff;color:var(--teal2);border:2px solid var(--line2)}
+.step{display:flex;align-items:center;gap:12px;background:#fff;border-radius:16px;padding:14px;border:2px solid transparent;cursor:pointer;text-align:left;width:100%;color:var(--ink)}
+.step.next{border-color:var(--teal)}
+.step.done{opacity:.8}
+.num{width:30px;height:30px;flex:none;border-radius:999px;border:2px solid var(--dim);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900}
+.step.done .num{background:var(--teal);border-color:var(--teal);color:#fff}
+.step.next .num{border-color:var(--teal);color:var(--teal)}
+.step .tt{display:block;font-size:16px;font-weight:800}
+.step .nn{display:block;font-size:13px;color:var(--muted)}
+.go{margin-left:auto;font-size:13px;font-weight:800;color:#fff;background:var(--teal);border-radius:99px;padding:8px 14px;white-space:nowrap}
+.go.ghost{background:#fff;color:var(--teal2);border:2px solid var(--line2)}
+.pbar{height:8px;border-radius:999px;background:var(--line);overflow:hidden}
+.pbar>span{display:block;height:100%;border-radius:999px;background:var(--teal)}
+.qcard{background:#fff;border-radius:22px;padding:24px 18px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
+.flip{border:none;cursor:pointer;min-height:340px;box-shadow:0 6px 24px rgba(15,42,61,.10);color:inherit;width:100%;justify-content:center}
+.speak{width:54px;height:54px;border-radius:999px;border:none;background:var(--teal);color:#fff;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:none}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.choice{min-height:60px;border-radius:16px;border:2px solid var(--line2);background:#fff;font-size:18px;font-weight:800;color:var(--ink);cursor:pointer;padding:8px 16px;text-align:left;width:100%}
+.choice.right{background:var(--tint);border:3px solid var(--teal);color:var(--teal2)}
+.choice.wrong{background:var(--warnbg);border-color:var(--warn);color:var(--warnink)}
+.choice:disabled{cursor:default}
+.tray{min-height:110px;border-radius:18px;border:2px dashed var(--dim);background:#fff;padding:12px;display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start}
+.chunks{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.chunk{min-height:50px;border-radius:14px;border:2px solid var(--line2);background:var(--tint);padding:0 14px;font-family:Nunito,sans-serif;font-size:19px;font-weight:900;color:var(--ink);cursor:pointer}
+.chunk.on{background:var(--teal);border-color:var(--teal);color:#fff}
+.chunk.used{background:transparent;border-style:dashed;border-color:var(--line);color:var(--line2);cursor:default}
+.bubble{padding:12px 14px;border-radius:14px;font-size:15px;font-weight:700}
+.bubble.ok{background:var(--tint);color:var(--teal2)}
+.bubble.no{background:var(--warnbg);color:var(--warnink)}
+.hint{background:#fff;border:2px solid var(--line2);color:var(--teal2);border-radius:99px;padding:8px 14px;font-weight:800;font-size:13px;cursor:pointer}
+.res{border:3px solid var(--teal);border-radius:22px;background:#fff;padding:22px 18px;display:flex;flex-direction:column;gap:14px}
+.res .line{display:flex;justify-content:space-between;align-items:center;background:var(--bg);border-radius:14px;padding:12px 14px;font-weight:800}
+.res .line b{color:var(--teal2);font-family:Nunito,sans-serif;font-size:18px}
+.stamp{align-self:center;background:var(--teal);color:#fff;border-radius:99px;padding:6px 16px;font-weight:900;font-size:14px}
+.units{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.units a{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;text-decoration:none;color:var(--ink);display:flex;flex-direction:column;gap:2px}
+.units a b{font-size:15px}.units a span{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="hero">
+    <div class="kick">MONSTER WRITING 3.2</div>
+    <h1 id="h1"></h1>
+    <div class="sub" id="sub"></div>
+    <div class="bar"><span id="bar" style="width:0"></span></div>
+  </header>
+  <main class="main" id="main"></main>
+</div>
+<script>
+const DATA = {"1":{"t":"Who is your brother?","w":[["best","최고의"],["favorite","아주 좋아하는"],["English teacher","영어 선생님"],["people","사람들"],["stage","무대"],["actor","배우"],["winner","우승자"],["famous","유명한"],["train station","기차역"],["student","학생"],["team member","팀원"],["playground","운동장"]],"s":[["너의 가장 친한 친구는 누구니?","Who is your best friend?"],["네가 가장 좋아하는 가수는 누구니?","Who is your favorite singer?"],["너의 영어 선생님은 누구니?","Who is your English teacher?"],["사진에 있는 그 사람들은 누구니?","Who are the people in the picture?"],["무대에 있는 댄서들은 누구니?","Who are the dancers on the stage?"],["그 우승자는 누구였니?","Who was the winner?"],["그 유명한 피아니스트는 누구였니?","Who was the famous pianist?"],["기차역에 있던 그 남자는 누구였니?","Who was the man at the train station?"],["그 학생들은 누구였니?","Who were the students?"],["너의 팀원들은 누구였니?","Who were your team members?"],["네가 가장 좋아하는 배우는 누구니?","Who is your favorite actor?"],["교실에 있는 그 학생들은 누구니?","Who are the students in the classroom?"],["파티에 있던 그 아이들은 누구였니?","Who were the kids at the party?"],["운동장에 있던 그 남자아이는 누구였니?","Who was the boy in the playground?"],["사진에서 너의 친구는 누구니?","Who is your friend in the picture?"],["무대에 있는 그 배우들은 누구니?","Who are the actors on the stage?"],["박물관에 있던 그 학생은 누구였니?","Who was the student in the museum?"],["너의 수학 선생님은 누구니?","Who is your math teacher?"],["공원에 있던 그 사람들은 누구였니?","Who were the people in the park?"],["작년에 너의 반 친구들은 누구였니?","Who were your classmates last year?"]]},"2":{"t":"Who likes pizza?","w":[["enjoy","즐기다"],["play","연주하다"],["broke","깨뜨렸다 (break의 과거형)"],["came","왔다 (come의 과거형)"],["brought","가져왔다 (bring의 과거형)"],["respect","존경하다"],["trust","믿다"],["help","돕다"],["meet","만나다"],["visit","방문하다"],["yesterday","어제"],["last Sunday","지난 일요일에"]],"s":[["누가 배드민턴을 즐기니?","Who enjoys badminton?"],["누가 피자를 원하니?","Who wants pizza?"],["누가 기타를 연주하니?","Who plays the guitar?"],["누가 그 접시를 깼니?","Who broke the dish?"],["누가 그 파티에 왔니?","Who came to the party?"],["누가 풍선들을 가져왔니?","Who brought balloons?"],["너는 누구를 좋아하니?","Who do you like?"],["너는 누구를 존경하니?","Who do you respect?"],["너는 누구를 믿니?","Who do you trust?"],["너는 누구를 도왔니?","Who did you help?"],["그는 어제 누구를 만났니?","Who did he meet yesterday?"],["그녀는 지난 일요일에 누구를 방문했니?","Who did she visit last Sunday?"],["누가 그 장난감을 가져왔니?","Who brought the toy?"],["그는 어제 누구를 방문했니?","Who did he visit yesterday?"],["누가 축구를 즐기니?","Who enjoys soccer?"],["누가 그 창문을 깨뜨렸니?","Who broke the window?"],["누가 딸기 케이크를 원하니?","Who wants strawberry cake?"],["누가 너의 집에 왔니?","Who came to your house?"],["그들은 누구를 도왔니?","Who did they help?"],["그녀는 지난 일요일에 누구를 만났니?","Who did she meet last Sunday?"]]},"3":{"t":"Review","w":[["favorite","매우 좋아하는"],["movie star","영화배우"],["best","최고의"],["late","늦은"],["bus stop","버스 정류소"],["stole","훔쳤다 (steal의 과거형)"],["cleaned","청소했다 (clean의 과거형)"],["baked","구웠다 (bake의 과거형)"],["sent","보냈다 (send의 과거형)"],["winner","우승자"],["ballet dancer","발레 댄서"],["gym","체육관"],["train station","기차역"],["call","전화하다"],["concert","콘서트"],["table tennis","탁구"],["comic book","만화책"],["after school","방과후에"]],"s":[["네가 가장 좋아하는 영화배우는 누구니?","Who is your favorite movie star?"],["너의 가장 친한 친구는 누구니?","Who is your best friend?"],["버스 정류장에 있던 그 남자는 누구였니?","Who was the man at the bus stop?"],["누가 작년에 너의 반 친구들이였니?","Who were your classmates last year?"],["누가 그의 지갑을 훔쳤니?","Who stole his wallet?"],["누가 그 방을 청소했니?","Who cleaned the room?"],["누가 이 피자를 구웠니?","Who baked this pizza?"],["누가 이 편지를 보냈니?","Who sent this letter?"],["우승자들은 누구였니?","Who were the winners?"],["그 발레 댄서들은 누구였니?","Who were the ballet dancers?"],["네가 가장 좋아하는 가수는 누구니?","Who is your favorite singer?"],["체육관에 있는 그 학생은 누구니?","Who is the student at the gym?"],["기차역에 있던 그 여자아이는 누구였니?","Who was the girl at the train station?"],["너는 어제 누구를 만났니?","Who did you meet yesterday?"],["너는 오늘 아침에 누구에게 전화했니?","Who did you call this morning?"],["너는 콘서트에서 누구를 보았니?","Who did you see at the concert?"],["누가 매일 탁구를 하니?","Who plays table tennis every day?"],["누가 방과후에 만화책을 읽니?","Who reads comic books after school?"],["누가 주말마다 거실을 청소하니?","Who cleans the living room on weekends?"],["누가 주말마다 빵을 굽니?","Who bakes bread on weekends?"]]},"4":{"t":"What is your favorite song?","w":[["phone number","전화번호"],["dream job","꿈의 직업, 장래 희망"],["subject","과목"],["goal","목표"],["name","이름"],["movie","영화"],["insect","곤충"],["plan","계획"],["final score","최종 점수"],["noise","소음"],["prize","상"],["birthday present","생일 선물"]],"s":[["너의 전화번호는 무엇이니?","What is your phone number?"],["네가 갖고 싶은 직업은 무엇이니?","What is your dream job?"],["네가 가장 좋아하는 과목은 무엇이니?","What is your favorite subject?"],["너의 목표는 무엇이니?","What is your goal?"],["그들의 이름은 무엇이니?","What are their names?"],["네가 가장 좋아하는 영화들은 무엇이니?","What are your favorite movies?"],["너의 계획들은 무엇이니?","What are your plans?"],["그 최종 점수는 무엇이었니?","What was the final score?"],["밖에서 나는 저 소음은 무엇이었니?","What was that noise?"],["그 상들은 무엇이었니?","What were the prizes?"],["그 생일 선물들은 무엇이었니?","What were the birthday presents?"],["너의 이름은 무엇이니?","What is your name?"],["너의 목표들은 무엇이었니?","What were your goals?"],["너의 계획은 무엇이니?","What is your plan?"],["그 선물들은 무엇이었니?","What were the presents?"],["네가 가장 좋아하는 노래들은 무엇이니?","What are your favorite songs?"],["그의 전화번호는 무엇이니?","What is his phone number?"],["그들이 가장 좋아하는 음식들은 무엇이니?","What are their favorite foods?"],["네가 가장 좋아하는 영화는 무엇이니?","What is your favorite movie?"],["그녀가 갖고 싶은 직업은 무엇이니?","What is her dream job?"]]},"5":{"t":"What do you want?","w":[["after school","방과후에"],["want","원하다"],["need","필요하다"],["eat","먹다"],["remember","기억하다"],["study","공부하다"],["teach","가르치다"],["store","가게"],["buy","사다"],["wear","입다"],["draw","그리다"],["last weekend","지난 주말에"]],"s":[["너는 무엇이 필요하니?","What do you need?"],["너는 방과후에 무엇을 하니?","What do you do after school?"],["너는 크리스마스에 무엇을 원하니?","What do you want for Christmas?"],["너는 아침밥으로 무엇을 먹니 ?","What do you eat for breakfast?"],["그녀는 무엇을 기억하니?","What does she remember?"],["그는 무엇을 공부하나요?","What does he study?"],["Emily는 학교에서 무엇을 가르치니?","What does Emily teach at school?"],["너는 가게에서 무엇을 샀니?","What did you buy at the store?"],["그들은 파티에서 무엇을 입었니?","What did they wear at the party?"],["Ian과 Luna는 무엇을 그렸니?","What did Ian and Luna draw?"],["Mike는 무엇을 좋아하니?","What does Mike like?"],["그들은 무엇을 그렸니?","What did they draw?"],["그는 쇼핑몰에서 무엇을 샀니?","What did he buy at the mall?"],["Emily는 방과후에 무엇을 하니?","What does Emily do after school?"],["네 엄마는 학교에서 무엇을 가르치니?","What does your mother teach at school?"],["너의 친구들은 저녁 식사로 무엇을 원하니?","What do your friends want for dinner?"],["너는 아침 식사로 무엇을 먹었니?","What did you eat for breakfast?"],["그녀는 축제에서 무엇을 입었니?","What did she wear at the festival?"],["너는 그 프로젝트를 위해 무엇이 필요하니?","What do you need for the project?"],["그 학생들은 학교에서 무엇을 배웠니?","What did the students learn at school?"]]},"6":{"t":"What subjects does he study?","w":[["food","음식"],["language","언어"],["sports","운동, 경기"],["dish","요리"],["TV show","텔레비전 쇼"],["hobby","취미"],["season","계절"],["subject","과목"],["magazine","잡지"],["place","장소"],["gift","선물"],["yesterday","어제"]],"s":[["너는 어떤 음식을 좋아하니?","What food do you like?"],["너는 어떤 언어를 말하니?","What language do you speak?"],["그 아이들은 어떤 스포츠를 즐기니?","What sports do the children enjoy?"],["그들은 무슨 요리들을 하니?","What dishes do they cook?"],["너의 아빠는 어떤 텔레비전 쇼들을 보시니?","What TV shows does your dad watch?"],["그녀는 무슨 계절을 좋아하니?","What season does she like?"],["Amy는 무슨 과목들을 공부하니?","What subjects does Amy study?"],["너는 지난주에 무슨 잡지들을 읽었니?","What magazines did you read last week?"],["Mia는 어떤 장소들을 방문했었니?","What places did Mia visit?"],["그 남자아이는 어떤 선물들을 받았니?","What gifts did the boy get?"],["Tim은 어떤 음식을 좋아하니?","What food does Tim like?"],["너는 지난주에 어떤 책들을 읽었니?","What books did you read last week?"],["너는 어떤 취미를 갖고 있니?","What hobby do you have?"],["그들은 어제 어떤 스포츠를 했니?","What sports did they play yesterday?"],["그 학생들은 어떤 음악을 즐기니?","What music do the students enjoy?"],["그녀는 어젯밤에 어떤 요리들을 했니?","What dishes did she cook last night?"],["너는 어떤 계절을 좋아하니?","What season do you like?"],["너는 어젯밤에 어떤 텔레비젼 쇼들을 보았니?","What TV shows did you watch last night?"],["그녀는 어떤 언어들을 말하니?","What languages does she speak?"],["Lisa는 그녀의 생일에 어떤 선물들을 받았니?","What gifts did Lisa get for her birthday?"]]},"7":{"t":"Review","w":[["phone number","전화번호"],["name","이름"],["free time","자유시간"],["Christmas","크리스마스"],["food","음식"],["TV show","텔레비전 쇼"],["final score","최종 점수"],["prize","상"],["magazine","잡지"],["place","장소"],["insect","곤충"],["problem","문제"],["hobby","취미"],["recipe","요리법"],["think","생각하다"],["buy","사다"],["draw","그리다"],["grow","재배하다"]],"s":[["너의 전화번호는 무엇이니?","What is your phone number?"],["그들의 이름은 무엇이니?","What are their names?"],["그는 그의 자유 시간에 무엇을 하니?","What does he do in his free time?"],["그들은 크리스마스에 무엇을 원하니?","What do they want for Christmas?"],["Mia는 어떤 음식을 좋아하니?","What food does Mia like?"],["너는 어떤 텔레비전 쇼를 보니?","What TV shows do you watch?"],["그 최종 점수는 무엇이었니?","What was the final score?"],["우승자들을 위한 상들은 무엇이었니?","What were the prizes for the winners?"],["너는 지난달에 무슨 잡지들을 읽었니?","What magazines did you read last month?"],["Brian과 Emily는 어떤 장소들에 방문했었니?","What places did Brian and Emily visit?"],["저 곤충들은 무엇이니?","What are those insects?"],["너의 문제는 무엇이니?","What is your problem?"],["너는 어떤 취미를 갖고 있니?","What hobby do you have?"],["너는 어떤 요리법들을 따르니?","What recipes do you follow?"],["그들은 그 책에 대해 무엇이라 생각했니?","What did they think about the book?"],["너는 그 가게에서 무엇을 샀니?","What did you buy at the store?"],["그 아이들은 무엇을 그렸니?","What did the children draw?"],["그 농부는 무엇을 재배했니?","What did the farmer grow?"],["그녀는 어떤 음식을 좋아하니?","What food does she like?"],["그는 어떤 잡지를 읽니?","What magazine does he read?"]]},"8":{"t":"When is your birthday?","w":[["birthday","생일"],["school festival","학교 축제"],["final exam","기말고사"],["meeting","회의"],["train","기차"],["wedding","결혼식"],["winter vacation","겨울 방학"],["match","시합, 경기"],["math test","수학 시험"],["BBQ party","바비큐 파티"],["magic show","마술쇼"],["concert","콘서트"]],"s":[["너의 생일은 언제니?","When is your birthday?"],["그 학교 축제는 언제니?","When is the school festival?"],["그 기말 시험은 언제니?","When is the final exam?"],["그 회의는 언제였니?","When was the meeting?"],["마지막 기차는 언제 있었니?","When was the last train?"],["그의 결혼식은 언제였니?","When was his wedding?"],["다음 시합이 언제니?","When is the next match?"],["수학 시험은 언제니?","When is the math test?"],["그 바비큐 파티는 언제였니?","When was the BBQ party?"],["그 마술 쇼는 언제였니?","When was the magic show?"],["그 콘서트는 언제였니?","When was the concert?"],["그 수학 시험은 언제니?","When is the math exam?"],["그 파티는 언제였니?","When was the party?"],["그 체험학습은 언제니?","When is the field trip?"],["그녀의 결혼식은 언제였니?","When was her wedding?"],["다음 수업은 언제니?","When is the next class?"],["그 콘서트는 언제니?","When is the concert?"],["마지막 시험은 언제였니?","When was the last test?"],["여름 방학은 언제니?","When is the summer vacation?"],["그 학교 축제는 언제였니?","When was the school festival?"]]},"9":{"t":"When do you eat lunch?","w":[["wake up","일어나다"],["play basketball","농구하다"],["practice the cello","첼로를 연습하다"],["go fishing","낚시하러 가다"],["feed the hamster","햄스터에게 먹이를 주다"],["do homework","숙제를 하다"],["eat dinner","저녁을 먹다"],["clean the room","방을 청소하다"],["walk the dog","개를 산책시키다"],["buy a new smartphone","새 스마트폰을 사다"],["finish the project","프로젝트를 끝내다"],["take medicine","약을 먹다"]],"s":[["너는 언제 일어나니?","When do you wake up?"],["그들은 언제 농구를 하니?","When do they play basketball?"],["너희는 언제 첼로를 연습하니?","When do you practice the cello?"],["Sophia와 Mike는 언제 낚시하러 가니?","When do Sophia and Mike go fishing?"],["그는 언제 그의 햄스터에게 먹이를 주니?","When does he feed his hamster?"],["너는 언제 저녁밥을 먹었니?","When did you eat dinner?"],["그는 언제 그의 방을 청소했니?","When did he clean his room?"],["너는 언제 너의 개를 산책시켰니?","When did you walk your dog?"],["그녀는 언제 새 스마트폰을 샀니?","When did she buy a new smartphone?"],["그들은 언제 그 프로젝트를 끝냈니?","When did they finish the project?"],["Sophia는 언제 피아노를 치니?","When does Sophia play the piano?"],["John은 언제 공원에 갔니?","When did John go to the park?"],["너는 언제 너의 개에게 먹이를 주니?","When do you feed your dog?"],["그는 언제 그의 숙제를 하니?","When does he do his homework?"],["그들은 언제 점심을 먹었니?","When did they eat lunch?"],["그는 언제 그의 일을 끝냈니?","When did he finish his work?"],["Paul과 Mike는 언제 축구를 연습하니?","When do Paul and Mike practice soccer?"],["엄마는 언제 그 생일 케이크를 샀니?","When did mom buy the birthday cake?"],["너는 어제 언제 일어났니?","When did you wake up yesterday?"],["너의 아빠는 그 집을 언제 청소하니?","When does your dad clean the house?"]]},"10":{"t":"Review","w":[["final exam","기말고사"],["birthday","생일"],["match","시합, 경기"],["feed the cat","고양이에게 먹이를 주다"],["watch the movie","영화를 보다"],["buy the new bike","새 자전거를 사다"],["wedding","결혼식"],["summer vacation","여름 방학"],["birthday party","생일파티"],["magic show","마술쇼"],["field trip","현장 학습"],["music festival","음악 축제"],["wake up","일어나다"],["play basketball","농구하다"],["practice the guitar","기타를 연습하다"],["take exams","시험을 보다"],["take medicine","약을 먹다"],["have lunch","점심을 먹다"]],"s":[["기말고사는 언제니?","When is the final exam?"],["그녀의 생일은 언제니?","When is her birthday?"],["다음 시합이 언제니?","When is the next match?"],["그녀는 언제 그녀의 고양이에게 먹이를 주니?","When does she feed her cat?"],["너는 언제 그 영화를 봤니?","When did you watch the movie?"],["너는 언제 그 새 자전거를 샀니?","When did you buy the new bike?"],["그들의 결혼식은 언제였니?","When was their wedding?"],["너의 여름 방학은 언제였니?","When was your summer vacation?"],["그녀의 생일파티는 언제니?","When is her birthday party?"],["그 마술 쇼는 언제였니?","When was the magic show?"],["올해 현장 학습은 언제니?","When is the field trip this year?"],["그 음악 축제는 언제였니?","When was the music festival?"],["너는 언제 일어나니?","When do you wake up?"],["그 남자아이들은 언제 농구를 하니?","When do the boys play basketball?"],["그녀는 언제 기타를 연습하니?","When does she practice the guitar?"],["그 학생들은 언제 그들의 시험들을 보나요?","When do the students take their exams?"],["너는 언제 너의 약을 먹었니?","When did you take your medicine?"],["그는 언제 점심을 먹니?","When does he have his lunch?"],["그녀는 언제 일어나니?","When does she wake up?"],["그는 언제 첼로를 연습하니?","When does he practice the cello?"]]},"11":{"t":"Where is the library?","w":[["hospital","병원"],["bakery","제과점"],["hometown","고향"],["towel","수건"],["toothbrush","칫솔"],["parents","부모님"],["comb","빗"],["cell phone","휴대폰"],["festival","축제"],["candle","양초"],["sock","양말"],["student","학생"]],"s":[["그 병원은 어디에 있니?","Where is the hospital?"],["그 제과점은 어디에 있니?","Where is the bakery?"],["그의 고향은 어디니 ?","Where is his hometown?"],["그 수건들은 어디에 있니?","Where are the towels?"],["우리의 칫솔들은 어디에 있니?","Where are our toothbrushes?"],["그 빗은 어디에 있었니?","Where was the comb?"],["내 휴대폰은 어디에 있었니?","Where was my cell phone?"],["그 축제는 어디에서 있었니?","Where was the festival?"],["그 양초들은 어디에 있었니?","Where were the candles?"],["내 양말들은 어디에 있었니?","Where were my socks?"],["그 책은 어디에 있니?","Where is the book?"],["그 개는 어디에 있었니?","Where was the dog?"],["너의 친구들은 어디에 있니?","Where are your friends?"],["그 수건들은 어디에 있었니?","Where were the towels?"],["그 콘서트는 어디에 있었니?","Where was the concert?"],["내 가방은 어디에 있었니?","Where was my bag?"],["그 도서관은 어디에 있니?","Where is the library?"],["그 연필들은 어디에 있었니?","Where were the pencils?"],["내 휴대폰은 어디에 있니?","Where is my cell phone?"],["그 학생들은 어디에 있니?","Where are the students?"]]},"12":{"t":"Where do you live?","w":[["play volleyball","배구를 하다"],["learn dance","춤을 배우다"],["buy vegetables","야채를 사다"],["park his car","(그의) 차를 주차하다"],["exercise","운동하다"],["work","일하다"],["eat lunch","점심을 먹다"],["find her wallet","(그녀의) 지갑을 찾다"],["meet","만나다"],["see the movie","영화를 보다"],["take the photo","사진을 찍다"],["study","공부하다"]],"s":[["그들은 어디에서 배구를 하니?","Where do they play volleyball?"],["너는 어디에서 춤을 배우니?","Where do you learn dance?"],["너희는 어디에서 야채들을 사니?","Where do you buy vegetables?"],["Henry는 어디에 그의 차를 주차하니?","Where does Henry park his car?"],["그녀는 어디에서 운동하니?","Where does she exercise?"],["너는 어디에서 점심을 먹었니?","Where did you eat lunch?"],["Emma는 자기 지갑을 어디에서 찾았니?","Where did Emma find her wallet?"],["너는 어디에서 너의 친구들을 만났니?","Where did you meet your friends?"],["그들은 어디에서 그 영화를 보았니?","Where did they see the movie?"],["너는 그 사진을 어디에서 찍었니?","Where did you take the photo?"],["너는 어디에서 운동하니?","Where do you exercise?"],["그는 어디에서 그의 휴대폰을 찾았니?","Where did he find his cell phone?"],["너의 아빠는 어디에서 과일들을 사니?","Where does your dad buy fruits?"],["그들은 어디에서 버스를 탔니?","Where did they take the bus?"],["너는 어디에서 축구를 하니?","Where do you play soccer?"],["그 학생들은 어디에서 영어를 배우니?","Where do the students learn English?"],["Emma는 어디에서 그녀의 친구들을 만났니?","Where did Emma meet her friends?"],["Mike는 그의 차를 어디에 주차하니?","Where does Mike park his car?"],["너와 너의 친구는 어디에서 저녁을 먹었니?","Where did you and your friend eat dinner?"],["너의 엄마는 어디에서 일하시니?","Where does your mom work?"]]},"13":{"t":"Review","w":[["hospital","병원"],["bakery","제과점"],["toy store","장난감 가게"],["student","학생"],["painting","그림"],["festival","축제"],["park her car","(그녀의) 차를 주차하다"],["take the bus","버스를 타다"],["meet friends","친구들을 만나다"],["hear the news","그 소식을 듣다"],["subway station","지하철역"],["comb","빗"],["cell phone","휴대폰"],["buy fruits","과일을 사다"],["find the wallet","지갑을 찾다"],["eat lunch","점심을 먹다"],["take photos","사진을 찍다"],["play baseball","야구를 하다"]],"s":[["그 병원은 어디에 있니?","Where is the hospital?"],["그 제과점들은 어디에 있니?","Where are the bakeries?"],["그 장난감 가게는 어디에 있었니?","Where was the toy store?"],["그 학생들은 어디에 있었니?","Where were the students?"],["그 그림들은 어디에 있었니?","Where were the paintings?"],["그 축제는 어디에서 있었니?","Where was the festival?"],["Lucy는 어디에 그녀의 차를 주차하니?","Where does Lucy park her car?"],["그들은 그 버스를 어디에서 타니?","Where do they take the bus?"],["너는 너의 친구들을 어디에서 만났니?","Where did you meet your friedns?"],["너는 그 소식을 어디에서 들었니?","Where did you hear the news?"],["그 지하철역은 어디에 있니?","Where is the subway station?"],["그 빗들은 어디에 있었니?","Where were the combs?"],["내 휴대폰은 어디에 있었니?","Where was my cell phone?"],["네 엄마는 어디에서 과일들을 샀니?","Where did your mom buy fruits?"],["너는 어디에서 내 지갑을 찾았니?","Where did you find my wallet?"],["너는 어디에서 점심을 먹니?","Where do you eat lunch?"],["그들은 어디에서 그 사진들을 찍었니?","Where did they take the photos?"],["너는 어디에서 야구를 했니?","Where did you play baseball?"],["장난감 가게는 어디에 있니?","Where is the toy store?"]]},"14":{"t":"Why are you tired?","w":[["tired","피곤한"],["nervous","불안해하는"],["computer","컴퓨터"],["delighted","기뻐하는"],["quiet","조용한"],["upset","속상한"],["window","창문"],["messy","지저분한"],["broken","고장 난"],["excited","신이 난"],["late","늦은"],["heavy","무거운"]],"s":[["너는 왜 피곤하니?","Why are you tired?"],["Andy는 왜 불안해하니?","Why is Andy nervous?"],["너의 컴퓨터는 왜 느리니?","Why is your computer slow?"],["그 남자는 왜 기뻐하니?","Why is the man delighted?"],["너는 왜 조용하니?","Why are you quiet?"],["그 창문이 왜 더러웠니?","Why was the window dirty?"],["너의 방은 왜 지저분했니?","Why was your room messy?"],["내 로봇이 왜 고장 났었니?","Why was my robot broken?"],["그 아이들은 왜 신이 났었니?","Why were the children excited?"],["그 학생들은 왜 늦었니?","Why were the students late?"],["그들은 왜 조용하니?","Why are they quiet?"],["너의 셔츠는 왜 더러웠니?","Why was your shirt dirty?"],["그 기차는 왜 느리니?","Why is the train slow?"],["너희는 왜 신이 났었니?","Why were you excited?"],["그녀는 왜 피곤하니?","Why is she tired?"],["그 거실은 왜 지저분했니?","Why was the living room messy?"],["그 배우들은 왜 불안해하니?","Why are the actors nervous?"],["그 상자들은 왜 무거웠니?","Why were the boxes heavy?"],["그 컴퓨터는 왜 고장났니?","Why was the computer broken?"],["그 학생들은 왜 기뻐하니?","Why are the students delighted?"]]},"15":{"t":"Why do you like soccer?","w":[["learn history","역사를 배우다"],["study English","영어를 공부하다"],["hate mushrooms","버섯들을 싫어한다"],["like volleyball","배구를 좋아하다"],["grow plants","식물들을 기르다"],["practice the violin","바이올린을 연습하다"],["buy a dress","드레스를 사다"],["watch the movie","영화를 보다"],["miss the train","기차를 놓치다"],["see a doctor","진료를 받다"],["forget homework","숙제를 잊다"],["join the book club","책 동아리에 들다"]],"s":[["너희는 왜 역사를 배우니?","Why do you learn history?"],["너는 왜 영어를 공부하니?","Why do you study English?"],["그들은 왜 배구를 좋아하니?","Why do they like volleyball?"],["너의 엄마는 왜 식물들을 키우시니?","Why does your mom grow plants?"],["그는 왜 버섯들을 싫어하니?","Why does he hate mushrooms?"],["그녀는 왜 저 드레스를 샀니?","Why did she buy that dress?"],["그는 왜 그 영화를 봤니?","Why did he watch the movie?"],["너는 왜 그 기차를 놓쳤니?","Why did you miss the train?"],["Ben은 왜 진료를 받았니?","Why did Ben see a doctor?"],["그들은 왜 그 책 동아리에 들었니?","Why did they join the book club?"],["너는 왜 축구를 좋아하니?","Why do you like soccer?"],["너는 왜 과일들을 샀니?","Why did you buy fruits?"],["Lisa는 왜 버섯들을 싫어하니?","Why does Lisa hate mushrooms?"],["그들은 왜 그 버스를 놓쳤니?","Why did they miss the bus?"],["너희는 왜 영어를 배우니?","Why do you learn English?"],["너는 왜 진료를 받았니?","Why did you see a doctor?"],["너희는 왜 역사를 공부하니?","Why do you study history?"],["그들은 왜 그 농구 팀에 가입했니?","Why did they join the basketball team?"],["너의 이모는 왜 꽃들을 키우시니?","Why does your aunt grow flowers?"],["Jake는 왜 피아노를 연습하니?","Why does Jake practice the piano?"]]},"16":{"t":"Review","w":[["delighted","기뻐하는"],["tired","피곤한"],["noisy","시끄러운"],["upset","속상한"],["practice the violin","바이올린을 연습하다"],["grow plants","식물들을 기르다"],["learn English","영어를 배우다"],["hate carrots","당근들을 싫어하다"],["messy","지저분한"],["nervous","불안해하는"],["quiet","조용한"],["sad","슬픈"],["popular","인기 있는"],["miss the bus","버스를 놓치다"],["travel abroad","해외여행을 하다"],["join the dance club","댄스 동아리에 가입하다"],["lose weight","살을 빼다"],["get a new job","새 직장을 구하다"]],"s":[["그 아이는 왜 기뻐하니?","Why is the child delighted?"],["너는 왜 피곤하니?","Why are you tired?"],["그 남자아이들은 왜 시끄러웠니?","Why were the boys noisy?"],["너는 어제 왜 속상했니?","Why were you upset yesterday?"],["Lisa는 왜 바이올린을 연습하니?","Why does Lisa practice the violin?"],["그는 왜 식물을 키우니?","Why does he grow plants?"],["너는 왜 영어를 배우니?","Why do you learn English?"],["그는 왜 당근들을 싫어하니?","Why does he hate carrots?"],["너의 방은 왜 지저분하니?","Why is your room messy?"],["그는 왜 불안해했니?","Why was he nervous?"],["그들은 오늘 아침에 왜 조용했니?","Why were they quiet this morning?"],["Jake는 어제 왜 슬퍼했니?","Why was Jake sad yesterday?"],["그 영화들은 왜 인기 있니?","Why are the movies popular?"],["그 여자아이는 왜 그 버스를 놓쳤니?","Why did the girl miss the bus?"],["그는 왜 해외여행을 했나요?","Why did he travel abroad?"],["Ashley는 왜 그 댄스 동아리에 가입했니?","Why did Ashley join the dance club?"],["그는 왜 살을 뺐나요?","Why did he lose weight?"],["그녀는 왜 새 직장을 구했나요?","Why did she get a new job?"],["그들은 왜 해외로 여행을 갔니?","Why did they travel abroad?"],["그는 왜 독서 동아리에 가입했니?","Why did he join the book club?"]]},"17":{"t":"How is your new house?","w":[["weather","날씨"],["school life","학교생활"],["science project","과학 프로젝트"],["neighbor","이웃"],["grandparents","할머니, 할아버지"],["lunch menu","점심 메뉴"],["sports day","운동회"],["music festival","음악 축제"],["trip","여행"],["exam","시험"],["holiday","휴일"],["grade","성적"]],"s":[["오늘 날씨가 어떠니?","How is the weather today?"],["너의 학교생활은 어떠니?","How is your school life?"],["너의 과학 프로젝트는 어떠니?","How is your science project?"],["너의 이웃들은 어떠니?","How are your neighbors?"],["너의 할머니, 할아버지는 어떠시니?","How are your grandparents?"],["그 점심 메뉴들은 어떠니?","How are the lunch menus?"],["그 운동회는 어땠니?","How was the sports day?"],["그 음악 축제는 어땠니?","How was the music festival?"],["너의 부산 여행은 어땠니?","How was your trip to Busan?"],["너의 시험들은 어땠니?","How were your exams?"],["너의 성적들은 어땠니?","How were your grades?"],["너의 여름 방학은 어땠니?","How was your summer vacation?"],["너의 새 이웃들은 어떠니?","How are your new neighbors?"],["파티에서 음식은 어땠니?","How was the food at the party?"],["너의 제주(Jeju) 여행은 어땠니?","How was your trip to Jeju?"],["그 현장 학습은 어땠니?","How was the field trip?"],["너의 엄마와 아빠는 어떠시니?","How are your mom and dad?"],["너의 영어 수업은 어떠니?","How is your English class?"],["이번 여름 음악 축제들은 어땠니?","How were the music festivals this summer?"],["학교 점심 메뉴는 어떠니?","How is the lunch menu at school?"]]},"18":{"t":"How do you make a cake?","w":[["spell","철자를 쓰다 (말하다)"],["practice yoga","요가를 연습하다"],["spend spare time","여가 시간을 보내다"],["stay healthy","건강을 유지하다"],["get to work","일하러 가다"],["make apple pies","사과파이들을 만들다"],["end","끝나다"],["work","작동하다"],["fix","고치다"],["know","알다"],["lose your wallet","(너의) 지갑을 잃어버리다"],["solve the problem","그 문제를 풀다, 해결하다"]],"s":[["너는 그 단어의 철자를 어떻게 쓰니?","How do you spell the word?"],["그들은 어떻게 요가를 연습하니?","How do they practice yoga?"],["너는 너의 여가시간을 어떻게 보내니?","How do you spend your spare time?"],["너의 부모님은 어떻게 건강을 유지하시니?","How do your parents stay healthy?"],["그는 어떻게 일하러 가니?","How does he get to work?"],["그 이야기는 어떻게 끝나니?","How does the story end?"],["그 기계는 어떻게 작동하니?","How does the machine work?"],["Olivia는 자동차들을 어떻게 수리했니?","How did Olivia fix cars?"],["너는 그 소식을 어떻게 알았니?","How did you know the news?"],["너는 어떻게 하다가 너의 지갑을 잃어버렸니?","How did you lose your wallet?"],["너의 엄마는 어떻게 파스타를 만드니?","How does your mom make pasta?"],["Jack은 어떻게 그 의자를 고쳤니?","How did Jack fix the chair?"],["그 영화는 어떻게 끝났니?","How did the movie end?"],["너는 어떻게 건강을 유지하니?","How do you stay healthy?"],["너의 아빠는 어떻게 일하러 가니?","How does your dad get to work?"],["너는 너의 우산을 어떻게 잃어버렸니?","How did you lose your umbrella?"],["그 컴퓨터는 어떻게 작동하니?","How does the computer work?"],["너는 그 수학 문제를 어떻게 풀었니?","How did you solve this math problem?"],["너는 너의 이름의 철자를 어떻게 쓰니?","How do you spell your name?"],["그들은 그들의 여름 방학을 어떻게 보냈니?","How did they spend their summer vacation?"]]},"19":{"t":"How old is your sister?","w":[["how old","얼마나 나이 든, 오래된"],["how big","얼마나 (크기가) 큰"],["how long","얼마나 (시간이나 길이가) 긴"],["how tall","얼마나 (키가) 큰"],["how clean","얼마나 깨끗한"],["how fast","얼마나 빠른"],["how strong","얼마나 힘이 센"],["how interesting","얼마나 흥미로운"],["how fun","얼마나 재미있는"],["how busy","얼마나 바쁜"],["how heavy","얼마나 무거운"],["how soft","얼마나 부드러운"]],"s":[["너의 사촌은 몇 살이니?","How old is your cousin?"],["그 궁전은 얼마나 크니?","How big is the palace?"],["그 뮤지컬은 얼마나 기니?","How long is the musical?"],["그 농구 선수들은 얼마나 키가 크니?","How tall are the basketball players?"],["그 교실들은 얼마나 깨끗하니?","How clean are the classrooms?"],["그 남자는 얼마나 힘이 세었니?","How strong was the man?"],["그 소설은 얼마나 흥미로웠니?","How interesting was the novel?"],["그 롤러코스터는 얼마나 재미있었니?","How fun was the roller coaster?"],["그 경찰관들은 얼마나 바빴니?","How busy were the police officers?"],["그 바위들은 얼마나 무거웠니?","How heavy were the rocks?"],["그 건물들은 얼마나 높니?","How tall are the buildings?"],["그 케이크는 얼마나 컸니?","How big was the cake?"],["그 차들은 얼마나 빠르니?","How fast are the cars?"],["그 게임은 얼마나 재미있었니?","How fun was the game?"],["너의 여동생은 몇 살이니?","How old is your sister?"],["그 상자들은 얼마나 무거웠니?","How heavy were the boxes?"],["그 책은 얼마나 흥미로웠니?","How interesting was the book?"],["너의 방은 얼마나 깨끗하니?","How clean is your room?"],["그 베개들은 얼마나 부드러웠니?","How soft were the pillows?"],["그 야구 선수는 얼마나 힘이 세니?","How strong is the baseball player?"]]},"20":{"t":"Review","w":[["neighbor","이웃"],["sports day","운동회"],["school life","학교생활"],["spend spare time","여가 시간을 보내다"],["make apple pies","사과파이들을 만들다"],["solve the problem","그 문제를 풀다, 해결하다"],["how big","얼마나 (크기가) 큰"],["how fast","얼마나 빠른"],["how heavy","얼마나 무거운"],["grandparents","할머니, 할아버지"],["music festival","음악 축제"],["summer camp","여름 캠프"],["end","끝나다"],["know","알다"],["win","이기다"],["how old","얼마나 나이 든, 오래된"],["how long","얼마나 (시간이나 길이가) 긴"],["how quiet","얼마나 조용한"]],"s":[["너의 새 이웃들은 어떠니?","How are your new neighbors?"],["그 운동회는 어땠니?","How was the sports day?"],["너의 학교생활은 어떠니?","How is your school life?"],["너는 너의 여가 시간을 어떻게 보냈니?","How did you spend your spare time?"],["Kevin은 어떻게 사과파이들을 만드니?","How does Kevin make apple pies?"],["너는 그 문제를 어떻게 풀었니?","How did you solve the problem?"],["그 배는 얼마나 크니?","How big is the ship?"],["그 트럭들은 얼마나 빠르니?","How fast are the trucks?"],["그 그랜드 피아노는 얼마나 무겁니?","How heavy is the grand piano?"],["너의 할머니, 할아버지는 어떠시니?","How are your grandparents?"],["그 음악 축제는 어땠니?","How was the music festival?"],["너의 여름 캠프는 어땠니?","How was your summer camp?"],["그 영화는 어떻게 끝나니?","How does the movie end?"],["너는 그 소식을 어떻게 알았니?","How did you know the news?"],["그는 그 게임에서 어떻게 이겼니?","How did he win the game?"],["그 사진 앨범은 얼마나 오래되었니?","How old is the photo album?"],["그 스카프들은 얼마나 기니?","How long are the scarves?"],["그 도서관은 얼마나 조용했니?","How quiet was the library?"],["그 도서관은 얼마나 조용하니?","How quiet is the library?"],["그 책들은 얼마나 오래되었니?","How old are the books?"]]}};
+
+const $main = document.getElementById("main");
+const unit = parseInt(new URLSearchParams(location.search).get("unit"), 10);
+const U = DATA[unit];
+const pad = (n) => String(n).padStart(2, "0");
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const shuffle = (a) => { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
+const shuffleNotSame = (a) => { if (a.length < 2) return [...a]; for (let k = 0; k < 6; k++) { const b = shuffle(a); if (b.some((x, i) => x !== a[i])) return b; } return [...a].reverse(); };
+const SPK = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9a4 4 0 0 1 0 6"/></svg>';
+
+function say(t, rate) {
+  if (!("speechSynthesis" in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(t.replace(/\(.*?\)/g, ""));
+  u.lang = "en-US"; u.rate = rate || 0.9;
+  speechSynthesis.speak(u);
+}
+
+/* 기록 (이 기기에만 저장) */
+const KEY = "monster-3.2-unit-" + unit;
+function load() { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } }
+function save(rec) { try { localStorage.setItem(KEY, JSON.stringify(rec)); } catch {} }
+
+const ACTS = [
+  { key: "flash", name: "단어 플래시 카드", desc: () => `단어 ${U.w.length}개 · 카드를 눌러 뜻 확인` },
+  { key: "meaning", name: "뜻 고르기", desc: () => `단어 ${U.w.length}개 · 알맞은 뜻 고르기` },
+  { key: "chunk", name: "문장 만들기", desc: () => `문장 ${U.s.length}개 · 덩어리를 눌러 문장 완성` },
+];
+
+function header(sub) {
+  document.getElementById("h1").textContent = `Unit ${pad(unit)} · ${U.t}`;
+  document.getElementById("sub").textContent = sub;
+  const rec = load();
+  const n = ACTS.filter((a) => rec[a.key]).length;
+  document.getElementById("bar").style.width = Math.round((n / ACTS.length) * 100) + "%";
+}
+
+/* 유닛 주소가 없을 때: 쌤용 유닛 목록 */
+function unitList() {
+  document.getElementById("h1").textContent = "유닛을 골라요";
+  document.getElementById("sub").textContent = "과제에는 각 유닛 주소를 붙여 넣어요 (예: monster.html?unit=1)";
+  document.getElementById("bar").parentElement.style.display = "none";
+  $main.innerHTML = `<div class="units">${Object.keys(DATA).map((k) => `<a href="?unit=${k}"><b>Unit ${pad(k)}</b><span>${esc(DATA[k].t)}</span></a>`).join("")}</div>`;
+}
+
+function home() {
+  speechSynthesis && speechSynthesis.cancel();
+  const rec = load();
+  header("순서대로 세 가지를 끝내고, 마지막 화면을 캡처해서 Sookje에 올려요");
+  const nextIdx = ACTS.findIndex((a) => !rec[a.key]);
+  $main.innerHTML = ACTS.map((a, i) => {
+    const r = rec[a.key];
+    const cls = r ? "done" : i === nextIdx ? "next" : "";
+    const status = r ? (a.key === "flash" ? "완료" : `완료 · 한 번에 맞힘 ${r.score}/${r.total}`) : a.desc();
+    return `<button class="step ${cls}" data-k="${a.key}"><span class="num">${r ? "✓" : i + 1}</span><span><span class="tt">${a.name}</span><span class="nn">${status}</span></span><span class="go ${r ? "ghost" : ""}">${r ? "다시 하기" : "시작"}</span></button>`;
+  }).join("") + (nextIdx === -1
+    ? `<button class="btn" id="toRes">결과 화면 보기</button>`
+    : `<div class="card small muted">세 가지를 다 하면 캡처할 결과 화면이 나와요. 다 하고 나면 문제집을 풀어요.</div>`);
+  $main.querySelectorAll(".step").forEach((b) => b.onclick = () => start(b.dataset.k));
+  const r = document.getElementById("toRes"); if (r) r.onclick = result;
+  scrollTo(0, 0);
+}
+
+function start(k) { ({ flash, meaning, chunk })[k](); }
+
+function finish(k, score, total) {
+  const rec = load();
+  rec[k] = { score, total, at: new Date().toISOString() };
+  save(rec);
+  if (ACTS.every((a) => rec[a.key])) result(); else home();
+}
+
+function progress(n, total, label) {
+  return `<div class="col" style="gap:6px"><div class="row" style="justify-content:space-between"><span class="label">${label}</span><b class="small" style="color:var(--teal)">${n} / ${total}</b></div><div class="pbar"><span style="width:${Math.round(n / total * 100)}%"></span></div></div>`;
+}
+const backBtn = `<button class="btn ghost" id="back">처음 화면으로</button>`;
+function wireBack() { document.getElementById("back").onclick = home; }
+
+/* ① 플래시 카드: 모르는 단어는 끝에 한 번 더 */
+function flash() {
+  header("① 단어 플래시 카드");
+  let queue = U.w.map(([w, m]) => ({ w, m })), again = new Set(), known = 0, back = false;
+  const draw = () => {
+    const c = queue[0];
+    $main.innerHTML = progress(known, U.w.length, "① 플래시 카드 · 카드를 누르면 뒤집혀요") +
+      `<button class="qcard flip" id="card"><div class="en" style="font-size:44px;font-weight:900;line-height:1.15">${esc(c.w)}</div>
+        <span class="speak" id="spk">${SPK}</span>
+        ${back ? `<div style="width:100%;border-top:2px dashed var(--line);margin:6px 0"></div><div style="font-size:26px;font-weight:900">${esc(c.m)}</div>` : `<div class="small muted" style="margin-top:16px">뜻이 생각나면 카드를 눌러 확인해요</div>`}
+      </button>
+      <div class="grid2"><button class="btn ghost" id="no">한 번 더 볼래요</button><button class="btn" id="ok">알아요</button></div>` + backBtn;
+    document.getElementById("card").onclick = () => { back = !back; draw(); };
+    document.getElementById("spk").onclick = (e) => { e.stopPropagation(); say(c.w); };
+    document.getElementById("ok").onclick = () => next(true);
+    document.getElementById("no").onclick = () => next(false);
+    wireBack();
+  };
+  const next = (ok) => {
+    const c = queue.shift();
+    if (!ok && !again.has(c.w)) { queue.push(c); again.add(c.w); } else known++;
+    back = false;
+    if (!queue.length) return finish("flash", U.w.length, U.w.length);
+    draw(); say(queue[0].w);
+  };
+  draw(); say(queue[0].w);
+}
+
+/* ② 뜻 고르기: 틀린 단어는 끝에 한 번 더 · 점수는 한 번에 맞힌 것 */
+function meaning() {
+  header("② 뜻 고르기");
+  const all = U.w.map(([, m]) => m);
+  let queue = shuffle(U.w.map(([w, m]) => ({ w, m }))), retried = new Set(), score = 0, doneN = 0;
+  const draw = () => {
+    const c = queue[0];
+    const opts = shuffle([c.m, ...shuffle(all.filter((x) => x !== c.m)).slice(0, 3)]);
+    $main.innerHTML = progress(doneN, U.w.length, "② 뜻 고르기 · 단어를 듣고 알맞은 뜻") +
+      `<div class="qcard"><div class="en" style="font-size:42px;font-weight:900">${esc(c.w)}</div><button class="speak" id="spk">${SPK}</button></div>
+       <div class="col" style="gap:10px" id="opts">${opts.map((o) => `<button class="choice" data-o="${esc(o)}">${esc(o)}</button>`).join("")}</div><div id="fb" class="col"></div>` + backBtn;
+    document.getElementById("spk").onclick = () => say(c.w);
+    wireBack();
+    say(c.w);
+    $main.querySelectorAll(".choice").forEach((b) => b.onclick = () => {
+      const pick = b.dataset.o, ok = pick === c.m;
+      $main.querySelectorAll(".choice").forEach((x) => { x.disabled = true; if (x.dataset.o === c.m) { x.classList.add("right"); x.textContent += " ✓"; } else if (x === b) x.classList.add("wrong"); });
+      if (ok && !retried.has(c.w)) score++;
+      document.getElementById("fb").innerHTML = `<div class="bubble ${ok ? "ok" : "no"}">${ok ? "맞았어요!" : `<b class="en">${esc(c.w)}</b> = ${esc(c.m)}${retried.has(c.w) ? "" : " · 이 단어는 끝에 한 번 더 나와요."}`}</div><button class="btn" id="nx">다음</button>`;
+      const nx = document.getElementById("nx"); nx.focus();
+      nx.onclick = () => {
+        const cur = queue.shift();
+        if (!ok && !retried.has(cur.w)) { queue.push(cur); retried.add(cur.w); } else doneN++;
+        if (!queue.length) return finish("meaning", score, U.w.length);
+        draw();
+      };
+    });
+  };
+  draw();
+}
+
+/* ③ 문장 만들기 (덩어리 배열) — 브릿지 라이팅과 같은 규칙으로 덩어리를 나눠요 */
+const GLUE = new Set(["a","an","the","my","your","his","her","its","our","their","this","that","these","those","to","of","in","on","at","from","with","for","by","about","into","very","too","so","some","any","no","not","don't","doesn't","didn't","can't","won't","every","each","one","two","three","many","much"]);
+function chunkSentence(s, max = 7) {
+  const words = s.trim().split(/\s+/).filter(Boolean);
+  if (words.length <= 4) return words;
+  const out = []; let buf = [];
+  words.forEach((w, i) => {
+    const bare = w.toLowerCase().replace(/[^a-z0-9']/g, "");
+    buf.push(w);
+    const glue = (GLUE.has(bare) || /^\d+$/.test(bare)) && !/[,.!?]$/.test(w);
+    if (i === words.length - 1 || !glue) { out.push(buf.join(" ")); buf = []; }
+  });
+  while (out.length > max) {
+    let best = 0;
+    for (let i = 1; i < out.length - 1; i++) if (out[i].length + out[i + 1].length < out[best].length + out[best + 1].length) best = i;
+    out.splice(best, 2, out[best] + " " + out[best + 1]);
+  }
+  return out;
+}
+function chunk() {
+  header("③ 문장 만들기");
+  let queue = shuffle(U.s.map(([ko, en]) => ({ ko, en }))), retried = new Set(), score = 0, doneN = 0;
+  const draw = () => {
+    const c = queue[0], parts = chunkSentence(c.en), order = shuffleNotSame(parts.map((_, k) => k));
+    let placed = [], result = null;
+    const paint = () => {
+      $main.innerHTML = progress(doneN, U.s.length, "③ 문장 만들기 · 덩어리를 눌러 문장을 만들어요") +
+        `<div class="qcard" style="padding:18px"><div style="font-size:21px;font-weight:900">${esc(c.ko)}</div><button class="hint" id="hint">🔈 힌트로 듣기</button></div>
+         <div class="tray">${placed.length ? placed.map((k) => `<button class="chunk on" data-p="${k}" ${result !== null ? "disabled" : ""}>${esc(parts[k])}</button>`).join("") : `<span class="small muted" style="padding:10px">아래 덩어리를 차례로 눌러요</span>`}</div>
+         <div class="chunks">${order.map((k) => `<button class="chunk ${placed.includes(k) ? "used" : ""}" data-k="${k}" ${placed.includes(k) || result !== null ? "disabled" : ""}>${esc(parts[k])}</button>`).join("")}</div>
+         ${result === null
+          ? `<button class="btn" id="chk" ${placed.length !== parts.length ? "disabled" : ""}>확인</button>`
+          : `<div class="bubble ${result ? "ok" : "no"}">${result ? `맞았어요! <span class="en">${esc(c.en)}</span>` : `정답: <b class="en">${esc(c.en)}</b>${retried.has(c.en) ? "" : " · 이 문장은 끝에 한 번 더 나와요."}`}</div><button class="btn" id="nx">다음</button>`}` + backBtn;
+      document.getElementById("hint").onclick = () => say(c.en);
+      $main.querySelectorAll(".chunks .chunk").forEach((b) => b.onclick = () => { placed.push(+b.dataset.k); paint(); });
+      $main.querySelectorAll(".tray .chunk").forEach((b) => b.onclick = () => { placed = placed.filter((x) => x !== +b.dataset.p); paint(); });
+      const chk = document.getElementById("chk");
+      if (chk) chk.onclick = () => { result = placed.map((k) => parts[k]).join(" ") === parts.join(" "); if (result && !retried.has(c.en)) score++; say(c.en); paint(); };
+      const nx = document.getElementById("nx");
+      if (nx) { nx.focus(); nx.onclick = () => {
+        const cur = queue.shift();
+        if (!result && !retried.has(cur.en)) { queue.push(cur); retried.add(cur.en); } else doneN++;
+        if (!queue.length) return finish("chunk", score, U.s.length);
+        draw(); scrollTo(0, 0);
+      }; }
+      wireBack();
+    };
+    paint();
+  };
+  draw();
+}
+
+/* 결과 화면 (캡처용) */
+function result() {
+  const rec = load();
+  header("이 화면을 캡처해서 Sookje에 올려요");
+  const last = Math.max(...ACTS.map((a) => Date.parse(rec[a.key].at)));
+  const d = new Date(last);
+  const when = `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  $main.innerHTML = `<div class="res">
+      <span class="stamp">Unit ${pad(unit)} 완료!</span>
+      <div style="text-align:center"><div class="en" style="font-size:22px;font-weight:900">${esc(U.t)}</div><div class="small muted">${when}</div></div>
+      <div class="line"><span>① 단어 플래시 카드</span><b>✓ ${rec.flash.total}개</b></div>
+      <div class="line"><span>② 뜻 고르기</span><b>${rec.meaning.score} / ${rec.meaning.total}</b></div>
+      <div class="line"><span>③ 문장 만들기</span><b>${rec.chunk.score} / ${rec.chunk.total}</b></div>
+      <div class="small muted" style="text-align:center">점수는 처음 한 번에 맞힌 개수예요</div>
+    </div>
+    <div class="card small"><b>다음 할 일</b><br>1. 이 화면을 캡처해요<br>2. 몬스터 라이팅 문제집 Unit ${pad(unit)}를 풀어요<br>3. 캡처 + 문제집 사진을 Sookje에 올려요</div>
+    <button class="btn ghost" id="back">처음 화면으로</button>`;
+  wireBack();
+  scrollTo(0, 0);
+}
+
+if (U) home(); else unitList();
+</script>
+</body>
+</html>
